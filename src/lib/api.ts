@@ -1,26 +1,18 @@
-import { dashboardOverviewMock } from "@/lib/mock-data";
+import { dashboardService } from "@/lib/services/dashboard-service";
+import { tradersService } from "@/lib/services/traders-service";
 import type { DashboardOverview } from "@/types/dashboard";
+import type { TradersOverview } from "@/types/traders";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333/api/v1";
-
-async function request<T>(path: string, fallbackData: T): Promise<T> {
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Falha ao buscar ${path}`);
-    }
-
-    return (await response.json()) as T;
-  } catch {
-    return fallbackData;
-  }
-}
+// Server Components chamam os services diretamente — sem round trip HTTP.
+// Client Components que precisarem de dados devem usar os Route Handlers em /api/.
 
 export async function getDashboardOverview(): Promise<DashboardOverview> {
-  return request("/dashboard/overview", dashboardOverviewMock);
+  return dashboardService.getOverview();
 }
 
+export async function getTradersOverview(params?: {
+  page?: number | string | null;
+  limit?: number | string | null;
+}): Promise<TradersOverview> {
+  return tradersService.getOverview(params);
+}

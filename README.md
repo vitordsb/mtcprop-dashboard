@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# appDashInterno/App
 
-## Getting Started
+Monolito do dashboard interno da MTCprop.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router
+- Prisma
+- Postgres
+- Tailwind CSS
+
+## Dados
+
+- O dashboard consome o Postgres via Prisma.
+- O seed lê a planilha em `/docs/planilhaBase.xlsx` por padrao, ou em `WORKBOOK_PATH` quando definido.
+- O runtime nao depende da planilha; os dados operacionais sao lidos do Postgres.
+
+## Desenvolvimento local
+
+Pela raiz do repositório:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ou manualmente dentro desta pasta:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env
+pnpm install
+pnpm db:bootstrap
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Se o seu Postgres local ainda estiver com schema antigo criado por `db:push`, resete a base antes de migrar para esse fluxo.
 
-## Learn More
+## Scripts úteis
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm typecheck
+pnpm db:generate
+pnpm db:push
+pnpm db:migrate
+pnpm db:migrate:deploy
+pnpm db:seed
+pnpm db:bootstrap
+pnpm db:studio
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Produção
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Deploy esperado na Vercel, usando `appDashInterno/App` como root directory e Postgres configurado nas variáveis `DATABASE_URL` e `DIRECT_URL`.
 
-## Deploy on Vercel
+Passos:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Fazer o push para o GitHub.
+2. Garantir que a Vercel esteja apontando para `appDashInterno/App`.
+3. Configurar `DATABASE_URL` com a URL de pooling/prisma do banco.
+4. Configurar `DIRECT_URL` com a URL non-pooling do banco.
+5. Deixar a build usar `pnpm vercel-build`, que aplica `prisma migrate deploy` antes do build.
+6. Se precisar subir dados iniciais, rodar `pnpm db:seed` a partir de uma maquina que tenha acesso ao repo e à planilha.

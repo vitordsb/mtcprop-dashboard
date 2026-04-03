@@ -1,23 +1,10 @@
 import type { ReactNode } from "react";
 
-import {
-  Bell,
-  BookOpenText,
-  BriefcaseBusiness,
-  FileSpreadsheet,
-  FolderLock,
-  GraduationCap,
-  House,
-  Moon,
-  Settings2,
-  ShieldCheck,
-  UserCog,
-  UsersRound,
-  WalletCards,
-} from "lucide-react";
+import { Bell, Moon } from "lucide-react";
 
 import { MtcpropMark } from "@/components/brand/mtcprop-mark";
 import { ProfileMenu } from "@/components/dashboard/profile-menu";
+import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import type { CompanySnapshot } from "@/types/dashboard";
 
 type DashboardShellProps = {
@@ -25,54 +12,6 @@ type DashboardShellProps = {
   pageTitle: string;
   children: ReactNode;
 };
-
-const navItems = [
-  {
-    icon: House,
-    label: "Inicio",
-    active: true,
-  },
-  {
-    icon: UsersRound,
-    label: "Alunos",
-  },
-  {
-    icon: GraduationCap,
-    label: "Inscricoes",
-  },
-  {
-    icon: FolderLock,
-    label: "Acessos",
-  },
-  {
-    icon: WalletCards,
-    label: "Financeiro",
-  },
-  {
-    icon: BriefcaseBusiness,
-    label: "Operacao",
-  },
-  {
-    icon: FileSpreadsheet,
-    label: "Relatorios",
-  },
-  {
-    icon: BookOpenText,
-    label: "Conteudos",
-  },
-  {
-    icon: UserCog,
-    label: "Equipe",
-  },
-  {
-    icon: ShieldCheck,
-    label: "Governanca",
-  },
-  {
-    icon: Settings2,
-    label: "Configuracoes",
-  },
-];
 
 export function DashboardShell({
   company,
@@ -87,26 +26,7 @@ export function DashboardShell({
             <MtcpropMark align="left" size="compact" />
           </div>
 
-          <nav className="grid gap-1 px-4 py-5">
-            {navItems.map(({ icon: Icon, label, active }) => (
-              <button
-                key={label}
-                type="button"
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium transition ${
-                  active
-                    ? "bg-[#eef4ee] text-[#071108]"
-                    : "text-[#334336] hover:bg-[#f4f7f4]"
-                }`}
-              >
-                <Icon
-                  className={`h-5 w-5 ${
-                    active ? "text-[var(--brand)]" : "text-[#18261a]"
-                  }`}
-                />
-                <span>{label}</span>
-              </button>
-            ))}
-          </nav>
+          <SidebarNav />
 
           <div className="hidden border-t border-[#edf2ed] px-6 py-5 lg:block">
             <div
