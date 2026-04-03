@@ -1,3 +1,4 @@
 {
+  "installCommand": "pnpm install --frozen-lockfile --force --reporter append-only",
   "buildCommand": "pnpm vercel-build"
 }

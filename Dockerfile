@@ -10,7 +10,7 @@ RUN corepack enable
 
 WORKDIR /workspace/appDashInterno/App
 
-COPY appDashInterno/App/package.json appDashInterno/App/pnpm-lock.yaml appDashInterno/App/pnpm-workspace.yaml ./
+COPY appDashInterno/App/package.json appDashInterno/App/pnpm-lock.yaml ./
 
 RUN pnpm install --frozen-lockfile
 
