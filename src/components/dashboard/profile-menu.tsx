@@ -47,14 +47,20 @@ export function ProfileMenu({ initial }: ProfileMenuProps) {
     };
   }, [open]);
 
-  function handleLogout() {
+  async function handleLogout() {
     setOpen(false);
     setIsLoggingOut(true);
 
-    startTransition(() => {
-      router.replace("/login");
-      router.refresh();
-    });
+    try {
+      await fetch("/api/v1/auth/logout", {
+        method: "POST",
+      });
+    } finally {
+      startTransition(() => {
+        router.replace("/login");
+        router.refresh();
+      });
+    }
   }
 
   return (

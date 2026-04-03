@@ -7,45 +7,53 @@ import {
 } from "lucide-react";
 
 import { DashboardShell } from "@/components/dashboard/app-shell";
+import { requireCurrentAdminUser } from "@/lib/auth/server";
 import { getDashboardOverview } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
-const profileItems = [
-  {
-    label: "Perfil",
-    value: "Administrador interno",
-    icon: UserRound,
-  },
-  {
-    label: "Contato",
-    value: "suporte@mtcprop.com.br",
-    icon: Mail,
-  },
-  {
-    label: "Ambiente",
-    value: "Painel local de homologacao",
-    icon: Waypoints,
-  },
-];
-
-const securityItems = [
-  {
-    title: "Sessao ativa",
-    description:
-      "Esse acesso continua local por enquanto. Quando conectarmos a autenticacao real, o logout vai invalidar a sessao do backend tambem.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Credenciais",
-    description:
-      "A pagina de perfil ja fica preparada para receber troca de senha, permissoes e historico de acessos nas proximas etapas.",
-    icon: KeyRound,
-  },
-];
-
 export default async function DashboardProfilePage() {
   const data = await getDashboardOverview();
+  const adminUser = await requireCurrentAdminUser();
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+  const profileItems = [
+    {
+      label: "Perfil",
+      value:
+        adminUser.role === "OWNER" ? "Owner do sistema" : "Administrador interno",
+      icon: UserRound,
+    },
+    {
+      label: "Contato",
+      value: adminUser.email,
+      icon: Mail,
+    },
+    {
+      label: "Ambiente",
+      value:
+        process.env.NODE_ENV === "production"
+          ? "Ambiente de producao"
+          : "Ambiente local de desenvolvimento",
+      icon: Waypoints,
+    },
+  ];
+  const securityItems = [
+    {
+      title: "Sessao ativa",
+      description:
+        "Sua sessao agora usa JWT em cookie HttpOnly, com protecao antes da renderizacao e validacao novamente no servidor.",
+      icon: ShieldCheck,
+    },
+    {
+      title: "Credenciais",
+      description:
+        "Os acessos administrativos estao restritos a usuarios internos previamente cadastrados e as senhas ficam salvas apenas em hash no banco.",
+      icon: KeyRound,
+    },
+  ];
 
   return (
     <DashboardShell company={data.company} pageTitle="My Profile">
@@ -57,12 +65,12 @@ export default async function DashboardProfilePage() {
 
           <div className="mt-4 space-y-3">
             <h2 className="font-display text-3xl tracking-[-0.06em] text-[#091309]">
-              Base do perfil administrativo
+              Perfil administrativo
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-[#627364]">
-              Esse espaco passa a centralizar os dados do usuario conectado.
-              Nesta primeira fase, deixei a estrutura pronta para evoluirmos com
-              autenticao real, permissoes e dados pessoais vindos da API.
+              Esse espaco agora reflete o usuario autenticado no sistema
+              interno da MTCprop, incluindo sessao protegida e dados reais do
+              acesso administrativo.
             </p>
           </div>
 
@@ -85,13 +93,25 @@ export default async function DashboardProfilePage() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-[18px] border border-[#e8eee8] bg-[#f8fbf8] px-4 py-4 text-sm leading-6 text-[#607162]">
-            <p>
-              Empresa: <span className="font-semibold text-[#0c160d]">{data.company.name}</span>
-            </p>
-            <p>
-              Site principal:{" "}
-              <a
+        <div className="mt-6 rounded-[18px] border border-[#e8eee8] bg-[#f8fbf8] px-4 py-4 text-sm leading-6 text-[#607162]">
+          <p>
+            Nome:{" "}
+            <span className="font-semibold text-[#0c160d]">{adminUser.name}</span>
+          </p>
+          <p>
+            Empresa: <span className="font-semibold text-[#0c160d]">{data.company.name}</span>
+          </p>
+          <p>
+            Ultimo login:{" "}
+            <span className="font-semibold text-[#0c160d]">
+              {adminUser.lastLoginAt
+                ? formatter.format(adminUser.lastLoginAt)
+                : "Primeiro acesso ainda nao registrado"}
+            </span>
+          </p>
+          <p>
+            Site principal:{" "}
+            <a
                 href={data.company.website}
                 target="_blank"
                 rel="noreferrer"
@@ -109,8 +129,8 @@ export default async function DashboardProfilePage() {
               Seguranca e acesso
             </h3>
             <p className="text-sm leading-6 text-[#627364]">
-              Componentes iniciais para a parte de credenciais e sessao do
-              usuario interno.
+              Camada atual de seguranca do login interno e base para evoluirmos
+              depois com troca de senha e permissao por colaborador.
             </p>
           </div>
 

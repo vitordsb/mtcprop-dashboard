@@ -5,6 +5,7 @@ import { Bell, Moon } from "lucide-react";
 import { MtcpropMark } from "@/components/brand/mtcprop-mark";
 import { ProfileMenu } from "@/components/dashboard/profile-menu";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
+import { getAdminInitial, requireCurrentAdminUser } from "@/lib/auth/server";
 import type { CompanySnapshot } from "@/types/dashboard";
 
 type DashboardShellProps = {
@@ -13,11 +14,13 @@ type DashboardShellProps = {
   children: ReactNode;
 };
 
-export function DashboardShell({
+export async function DashboardShell({
   company,
   pageTitle,
   children,
 }: DashboardShellProps) {
+  const adminUser = await requireCurrentAdminUser();
+
   return (
     <div className="min-h-screen bg-[#f3f6fa] text-[#071108]">
       <div className="grid min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -85,7 +88,7 @@ export function DashboardShell({
               >
                 <Moon className="h-5 w-5" />
               </button>
-              <ProfileMenu initial="V" />
+              <ProfileMenu initial={getAdminInitial(adminUser)} />
             </div>
           </header>
 

@@ -1,6 +1,10 @@
 import path from "node:path";
 
-import { PrismaClient, type TraderSourceOrigin } from "@prisma/client";
+import {
+  PrismaClient,
+  type TraderSourceOrigin,
+  type UserRole,
+} from "@prisma/client";
 
 import {
   loadWorkbookTradersDataset,
@@ -8,6 +12,21 @@ import {
 } from "../src/lib/workbook/traders-workbook";
 
 const prisma = new PrismaClient();
+
+const internalAdmins = [
+  {
+    name: "Vitor DSB",
+    email: "vitordsb2019@gmail.com",
+    passwordHash: "$2b$12$2fZEjFp.3TOMtccpSm4Go.nd8wcvCyOoYuYteUDrl8VZGGFp/61Mq",
+    role: "OWNER" as UserRole,
+  },
+  {
+    name: "Yago Ribeiro",
+    email: "yagoribeirotrader@gmail.com",
+    passwordHash: "$2b$12$Hh99LYwfu80PL7XGjgonKeSeR5.Z2p9X2GBARHq1xH.BIvbC7UQAW",
+    role: "ADMIN" as UserRole,
+  },
+];
 
 function buildEmail(name: string, usedEmails: Set<string>) {
   const baseEmail =
@@ -158,23 +177,42 @@ async function main() {
     await prisma.adminUser.deleteMany();
   }
 
-  const admin = await prisma.adminUser.upsert({
+  await prisma.adminUser.updateMany({
     where: {
-      email: "operacoes@mtcprop.com.br",
+      email: {
+        notIn: internalAdmins.map((adminUser) => adminUser.email),
+      },
     },
-    update: {
-      name: "Operacao MTCprop",
-      role: "OWNER",
-      isActive: true,
-    },
-    create: {
-      name: "Operacao MTCprop",
-      email: "operacoes@mtcprop.com.br",
-      passwordHash: "ALTERAR_ANTES_DE_USAR",
-      role: "OWNER",
-      isActive: true,
+    data: {
+      isActive: false,
     },
   });
+
+  const syncedAdmins = await Promise.all(
+    internalAdmins.map((adminUser) =>
+      prisma.adminUser.upsert({
+        where: {
+          email: adminUser.email,
+        },
+        update: {
+          name: adminUser.name,
+          passwordHash: adminUser.passwordHash,
+          role: adminUser.role,
+          isActive: true,
+        },
+        create: {
+          name: adminUser.name,
+          email: adminUser.email,
+          passwordHash: adminUser.passwordHash,
+          role: adminUser.role,
+          isActive: true,
+        },
+      }),
+    ),
+  );
+  const ownerAdmin =
+    syncedAdmins.find((adminUser) => adminUser.role === "OWNER") ??
+    syncedAdmins[0];
 
   const products = await Promise.all([
     prisma.product.upsert({
@@ -322,7 +360,7 @@ async function main() {
 
   await prisma.auditEvent.create({
     data: {
-      adminUserId: admin.id,
+      adminUserId: ownerAdmin.id,
       action: resetMode ? "seed.reset.completed" : "seed.sync.completed",
       entityType: "system",
       entityId: "bootstrap",
@@ -330,6 +368,7 @@ async function main() {
         seededAt: new Date().toISOString(),
         source: path.basename(workbookPath),
         tradersImported: traders.length,
+        adminUsersSynced: internalAdmins.map((adminUser) => adminUser.email),
         resetMode,
       },
     },
