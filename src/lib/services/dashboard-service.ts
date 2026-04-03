@@ -3,6 +3,7 @@ import type {
   EnrollmentStatus,
   StudentStage as DbStudentStage,
 } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 
 import { getCompanySnapshot } from "@/lib/company-snapshot";
 import { prisma } from "@/lib/prisma";
@@ -171,6 +172,12 @@ function buildActivityTimeline(params: {
 
 export const dashboardService = {
   async getOverview(): Promise<DashboardOverview> {
+    return getCachedDashboardOverview();
+  },
+};
+
+const getCachedDashboardOverview = unstable_cache(
+  async (): Promise<DashboardOverview> => {
     const [
       activeStudents,
       activeEnrollments,
@@ -181,6 +188,7 @@ export const dashboardService = {
       enrollmentCounts,
       moduleCounts,
       products,
+      productEnrollmentCounts,
       recentStudents,
     ] = await Promise.all([
       prisma.student.count({ where: { isActive: true } }),
@@ -204,12 +212,18 @@ export const dashboardService = {
       prisma.product.findMany({
         where: { isActive: true },
         orderBy: { name: "asc" },
-        include: {
-          enrollments: {
-            where: { status: "ACTIVE" },
-            select: { id: true },
-          },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          price: true,
+          maxContracts: true,
         },
+      }),
+      prisma.enrollment.groupBy({
+        by: ["productId"],
+        where: { status: "ACTIVE" },
+        _count: { _all: true },
       }),
       prisma.student.findMany({
         where: { isActive: true },
@@ -238,11 +252,16 @@ export const dashboardService = {
     const enrollmentCountMap = new Map<EnrollmentStatus, number>(
       enrollmentCounts.map((item) => [item.status, item._count._all]),
     );
+    const productEnrollmentCountMap = new Map(
+      productEnrollmentCounts.map((item) => [item.productId, item._count._all]),
+    );
 
     const liveDeskStudents = stageCountMap.get("LIVE_DESK") ?? 0;
     const onboardingStudents = stageCountMap.get("ONBOARDING") ?? 0;
     const estimatedRevenue = products.reduce(
-      (total, product) => total + product.enrollments.length * Number(product.price),
+      (total, product) =>
+        total +
+        (productEnrollmentCountMap.get(product.id) ?? 0) * Number(product.price),
       0,
     );
 
@@ -347,8 +366,11 @@ export const dashboardService = {
       ],
       plans: products.map((product) => ({
         name: product.name,
-        activeStudents: product.enrollments.length,
-        revenueShare: formatCurrency(product.enrollments.length * Number(product.price)),
+        activeStudents: productEnrollmentCountMap.get(product.id) ?? 0,
+        revenueShare: formatCurrency(
+          (productEnrollmentCountMap.get(product.id) ?? 0) *
+            Number(product.price),
+        ),
         maxContracts: product.maxContracts
           ? `${product.maxContracts} contratos`
           : "Sem limite definido",
@@ -373,4 +395,9 @@ export const dashboardService = {
       }),
     };
   },
-};
+  ["dashboard-overview"],
+  {
+    revalidate: 45,
+    tags: ["dashboard-overview"],
+  },
+);
