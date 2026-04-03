@@ -62,3 +62,9 @@ Passos:
 4. Configurar `DIRECT_URL` com a URL non-pooling do banco.
 5. Deixar a build usar `pnpm vercel-build`, que aplica `prisma migrate deploy` antes do build.
 6. Se precisar subir dados iniciais, rodar `pnpm db:seed` a partir de uma maquina que tenha acesso ao repo e à planilha.
+
+Importante:
+
+- Na Vercel, o Prisma deve usar apenas as variaveis do dashboard.
+- Nao suba `appDashInterno/App/.env` nem `appDashInterno/App/.env.local` para o repositório.
+- Se esses arquivos ja foram enviados ao GitHub em algum momento, remova-os do repositório antes do novo deploy.
