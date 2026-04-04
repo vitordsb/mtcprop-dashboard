@@ -52,8 +52,8 @@ export function TradersOverviewView({ data }: TradersOverviewProps) {
 
   return (
     <DashboardShell company={data.company} pageTitle="Traders">
-      <section className="overflow-hidden rounded-[24px] border border-[#e7ece8] bg-white shadow-[0_18px_40px_rgba(12,25,13,0.04)]">
-        <div className="border-b border-[#edf2ee] px-6 pt-5">
+      <section className="theme-card overflow-hidden rounded-[24px]">
+        <div className="border-b border-[var(--app-border-soft)] px-6 pt-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
               <div className="flex items-center gap-8">
@@ -68,17 +68,17 @@ export function TradersOverviewView({ data }: TradersOverviewProps) {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pb-5">
-                <div className="inline-flex items-center gap-2 rounded-[12px] border border-[#edf2ee] bg-[#fafcfb] px-3 py-2 text-sm font-medium text-[#223225]">
+                <div className="theme-card-soft theme-text inline-flex items-center gap-2 rounded-[12px] px-3 py-2 text-sm font-medium">
                   <UsersRound className="h-4 w-4 text-[#4a67ff]" />
                   {pagination.total} traders
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-[12px] border border-[#edf2ee] bg-[#fafcfb] px-3 py-2 text-sm text-[#6a7c6c]">
+                <div className="theme-card-soft theme-text-muted inline-flex items-center gap-2 rounded-[12px] px-3 py-2 text-sm">
                   Página {pagination.page} de {pagination.totalPages}
                 </div>
               </div>
             </div>
 
-            <div className="pb-5 text-sm text-[#7c8b7e]">
+            <div className="theme-text-subtle pb-5 text-sm">
               Exibindo 10 registros por página para manter a consulta leve.
             </div>
           </div>
@@ -86,8 +86,8 @@ export function TradersOverviewView({ data }: TradersOverviewProps) {
 
         <div className="overflow-x-auto">
           <table className="min-w-[1080px] w-full">
-            <thead className="bg-[#fafbfc]">
-              <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a9790]">
+            <thead className="theme-table-head">
+              <tr className="theme-text-subtle text-left text-[11px] font-semibold uppercase tracking-[0.18em]">
                 <th className="px-6 py-4">Trader</th>
                 <th className="px-4 py-4">Plano</th>
                 <th className="px-4 py-4">Início</th>
@@ -102,18 +102,18 @@ export function TradersOverviewView({ data }: TradersOverviewProps) {
               {data.traders.map((trader) => (
                 <tr
                   key={trader.id}
-                  className="border-t border-[#eef2ef] text-sm text-[#203023] transition hover:bg-[#fbfcfb]"
+                  className="theme-table-row border-t border-[var(--app-border-soft)] text-sm transition"
                 >
                   <td className="px-6 py-4">
                     <div className="space-y-1">
-                      <p className="font-semibold text-[#0f1a11]">{trader.name}</p>
-                      <p className="text-[13px] text-[#718173]">{trader.email}</p>
+                      <p className="theme-title font-semibold">{trader.name}</p>
+                      <p className="theme-text-subtle text-[13px]">{trader.email}</p>
                     </div>
                   </td>
 
                   <td className="px-4 py-4">
-                    <p className="font-medium text-[#243426]">{trader.plan}</p>
-                    <p className="mt-1 text-[12px] text-[#8a9790]">
+                    <p className="theme-text font-medium">{trader.plan}</p>
+                    <p className="theme-text-subtle mt-1 text-[12px]">
                       {trader.historyCount > 1
                         ? `${trader.historyCount} históricos`
                         : "Base única"}
@@ -121,7 +121,7 @@ export function TradersOverviewView({ data }: TradersOverviewProps) {
                   </td>
 
                   <td className="px-4 py-4">
-                    <div className="inline-flex items-center gap-2 text-[13px] text-[#617363]">
+                    <div className="theme-text-muted inline-flex items-center gap-2 text-[13px]">
                       <CalendarClock className="h-4 w-4 text-[#8fa099]" />
                       {trader.startedAt}
                     </div>
@@ -158,10 +158,10 @@ export function TradersOverviewView({ data }: TradersOverviewProps) {
 
                   <td className="px-4 py-4">
                     <div className="space-y-1">
-                      <p className="font-medium text-[#243426]">
+                      <p className="theme-text font-medium">
                         {trader.nextMonthlyDue}
                       </p>
-                      <p className="text-[12px] text-[#8a9790]">
+                      <p className="theme-text-subtle text-[12px]">
                         Próxima cobrança
                       </p>
                     </div>
@@ -193,22 +193,22 @@ export function TradersOverviewView({ data }: TradersOverviewProps) {
           </table>
         </div>
 
-        <div className="border-t border-[#edf2ee] px-6 py-4">
+        <div className="border-t border-[var(--app-border-soft)] px-6 py-4">
           <div className="flex items-center justify-center gap-3">
             <Link
               href={pagination.hasPreviousPage ? buildPageHref(pagination.page - 1) : "#"}
               aria-disabled={!pagination.hasPreviousPage}
               className={`inline-flex items-center gap-2 rounded-[12px] border px-4 py-2 text-sm font-medium transition ${
                 pagination.hasPreviousPage
-                  ? "border-[#d8e2da] bg-white text-[#142116] hover:bg-[#f6f9f7]"
-                  : "cursor-not-allowed border-[#edf2ed] bg-[#f8faf8] text-[#a0aca2]"
+                  ? "theme-card-soft theme-text border-[var(--app-border-strong)] hover:bg-[var(--app-hover)]"
+                  : "cursor-not-allowed border-[var(--app-border-soft)] bg-[var(--app-surface-soft)] text-[var(--app-text-subtle)]"
               }`}
             >
               <ChevronLeft className="h-4 w-4" />
               Anterior
             </Link>
 
-            <span className="min-w-[120px] text-center text-sm font-medium text-[#556657]">
+            <span className="theme-text-muted min-w-[120px] text-center text-sm font-medium">
               Página {pagination.page}
             </span>
 
@@ -217,8 +217,8 @@ export function TradersOverviewView({ data }: TradersOverviewProps) {
               aria-disabled={!pagination.hasNextPage}
               className={`inline-flex items-center gap-2 rounded-[12px] border px-4 py-2 text-sm font-medium transition ${
                 pagination.hasNextPage
-                  ? "border-[#d8e2da] bg-white text-[#142116] hover:bg-[#f6f9f7]"
-                  : "cursor-not-allowed border-[#edf2ed] bg-[#f8faf8] text-[#a0aca2]"
+                  ? "theme-card-soft theme-text border-[var(--app-border-strong)] hover:bg-[var(--app-hover)]"
+                  : "cursor-not-allowed border-[var(--app-border-soft)] bg-[var(--app-surface-soft)] text-[var(--app-text-subtle)]"
               }`}
             >
               Próximo

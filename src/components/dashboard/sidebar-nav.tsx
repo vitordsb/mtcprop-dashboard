@@ -67,13 +67,13 @@ export function SidebarNav() {
             href={href}
             className={`flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] font-medium transition ${
               isActive
-                ? "bg-[#eef4ee] text-[#071108]"
-                : "text-[#334336] hover:bg-[#f4f7f4]"
+                ? "theme-nav-item-active"
+                : "theme-nav-item"
             }`}
           >
             <Icon
               className={`h-5 w-5 shrink-0 ${
-                isActive ? "text-[var(--brand)]" : "text-[#18261a]"
+                isActive ? "text-[var(--brand)]" : "theme-nav-icon"
               }`}
             />
             <span>{label}</span>

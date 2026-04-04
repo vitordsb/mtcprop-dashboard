@@ -18,7 +18,7 @@ type LoginValues = {
 };
 
 const baseFieldClassName =
-  "w-full rounded-[12px] border border-[#d8e2d9] bg-[#fcfdfc] px-4 py-3.5 text-[15px] text-[#071108] outline-none transition placeholder:text-[#8a9a8d] focus:border-[#45e15f] focus:ring-4 focus:ring-[rgba(69,225,95,0.14)]";
+  "theme-input w-full rounded-[12px] border px-4 py-3.5 text-[15px] outline-none transition focus:border-[#45e15f] focus:ring-4 focus:ring-[rgba(69,225,95,0.14)]";
 
 export function AuthFormCard({ mode }: AuthFormCardProps) {
   const router = useRouter();
@@ -77,7 +77,7 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
   }
 
   return (
-    <div className="reveal rounded-[16px] border border-[rgba(7,17,8,0.08)] bg-white/92 p-6 shadow-[0_28px_80px_rgba(7,17,8,0.12)] backdrop-blur-xl sm:p-8">
+    <div className="theme-auth-card reveal rounded-[16px] border p-6 backdrop-blur-xl sm:p-8">
       <div className="mb-8 space-y-5 text-center">
         <div className="inline-flex rounded-[10px] border border-[rgba(69,225,95,0.2)] bg-[rgba(69,225,95,0.08)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#176124]">
           Ambiente interno da MTCprop
@@ -86,10 +86,10 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
         <MtcpropMark />
 
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-[-0.05em] text-[#071108]">
+          <h1 className="theme-title text-3xl font-semibold tracking-[-0.05em]">
             {isLogin ? "Login" : "Acesso interno"}
           </h1>
-          <p className="mx-auto max-w-md text-sm leading-6 text-[#607162]">
+          <p className="theme-text-muted mx-auto max-w-md text-sm leading-6">
             {isLogin
               ? "Entre no painel interno para acompanhar alunos, inscricoes e acessos da operacao."
               : "Novos acessos administrativos sao liberados apenas pela operacao da MTCprop."}
@@ -100,7 +100,7 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-2">
           <label
-            className="block text-sm font-medium text-[#415243]"
+            className="theme-text block text-sm font-medium"
             htmlFor="email"
           >
             E-mail de acesso
@@ -124,7 +124,7 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
 
         <div className="space-y-2">
           <label
-            className="block text-sm font-medium text-[#415243]"
+            className="theme-text block text-sm font-medium"
             htmlFor="password"
           >
             Senha
@@ -149,7 +149,7 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
               type="button"
               aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
               onClick={() => setShowPassword((current) => !current)}
-              className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[10px] text-[#7b8b7d] transition hover:bg-[#eff4ef] hover:text-[#071108]"
+              className="theme-icon-button absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[10px] transition"
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -176,7 +176,7 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
         </button>
       </form>
 
-      <div className="mt-6 flex items-center justify-between gap-4 text-sm text-[#607162]">
+      <div className="theme-text-muted mt-6 flex items-center justify-between gap-4 text-sm">
         <a
           href="mailto:suporte@mtcprop.com.br?subject=Recuperacao%20de%20acesso%20MTCprop"
           className="transition hover:text-[#071108]"

@@ -80,15 +80,15 @@ export function ProfileMenu({ initial }: ProfileMenuProps) {
         <div
           role="menu"
           aria-label="Menu do perfil"
-          className="absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[220px] rounded-[18px] border border-[#e4ebe5] bg-white p-2 shadow-[0_22px_50px_rgba(9,19,9,0.14)]"
+          className="theme-dropdown absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[220px] rounded-[18px] p-2"
         >
           <Link
             href="/dashboard/perfil"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 rounded-[14px] px-4 py-3 text-[15px] font-medium text-[#142116] transition hover:bg-[#f3f7f3]"
+            className="theme-menu-item flex items-center gap-3 rounded-[14px] px-4 py-3 text-[15px] font-medium transition"
           >
-            <CircleUserRound className="h-5 w-5 text-[#1f2b21]" />
+            <CircleUserRound className="h-5 w-5" />
             <span>My Profile</span>
           </Link>
 
@@ -97,9 +97,9 @@ export function ProfileMenu({ initial }: ProfileMenuProps) {
             role="menuitem"
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="flex w-full items-center gap-3 rounded-[14px] px-4 py-3 text-left text-[15px] font-medium text-[#142116] transition hover:bg-[#f3f7f3] disabled:cursor-not-allowed disabled:opacity-70"
+            className="theme-menu-item flex w-full items-center gap-3 rounded-[14px] px-4 py-3 text-left text-[15px] font-medium transition disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <LogOut className="h-5 w-5 text-[#1f2b21]" />
+            <LogOut className="h-5 w-5" />
             <span>{isLoggingOut ? "Saindo..." : "Logout"}</span>
           </button>
         </div>

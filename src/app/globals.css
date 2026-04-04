@@ -1,15 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --background: #030805;
-  --foreground: #f4fff5;
-  --surface: rgba(8, 20, 14, 0.84);
-  --border: rgba(69, 225, 95, 0.16);
+  --background: #eef4ee;
+  --foreground: #071108;
+  --surface: rgba(255, 255, 255, 0.94);
+  --border: rgba(7, 17, 8, 0.08);
   --brand: #45e15f;
   --brand-ink: #071108;
-  --muted: #93a998;
+  --muted: #627364;
   --warning: #f5c86b;
   --danger: #ff7b7b;
+  --body-background:
+    radial-gradient(circle at top, rgba(69, 225, 95, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8fbf8 0%, #edf4ee 100%);
+  --app-page-bg: #f3f6fa;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f8fbf8;
+  --app-surface-muted: #f6f9f7;
+  --app-shell-surface: rgba(255, 255, 255, 0.95);
+  --app-border: #e4ebe5;
+  --app-border-soft: #edf2ed;
+  --app-border-strong: #d8e2da;
+  --app-border-hover: #cfe1d1;
+  --app-text: #142116;
+  --app-text-strong: #091309;
+  --app-text-muted: #627364;
+  --app-text-subtle: #7b8b7d;
+  --app-table-head: #fafbfc;
+  --app-row-hover: #fbfcfb;
+  --app-hover: #f3f7f3;
+  --app-shadow: 0 18px 40px rgba(12, 25, 13, 0.05);
+  --app-shadow-soft: 0 14px 30px rgba(12, 25, 13, 0.04);
+  --input-bg: #fcfdfc;
+  --input-border: #d8e2d9;
+  --auth-shell-background: linear-gradient(180deg, #eef4ee 0%, #f8fbf8 55%, #edf5ee 100%);
+  --auth-overlay: linear-gradient(135deg, rgba(248, 251, 248, 0.92), rgba(240, 246, 241, 0.96));
+  --auth-dark-orb: rgba(7, 17, 8, 0.08);
+}
+
+html[data-theme="dark"] {
+  --background: #030805;
+  --foreground: #f4fff5;
+  --surface: rgba(8, 20, 14, 0.88);
+  --border: rgba(69, 225, 95, 0.16);
+  --muted: #93a998;
+  --body-background:
+    radial-gradient(circle at top, rgba(69, 225, 95, 0.12), transparent 28%),
+    linear-gradient(180deg, #06110a 0%, #010302 100%);
+  --app-page-bg: #09120d;
+  --app-surface: #0f1813;
+  --app-surface-soft: #131f18;
+  --app-surface-muted: #17231c;
+  --app-shell-surface: rgba(10, 18, 13, 0.95);
+  --app-border: #1e2f23;
+  --app-border-soft: #1a281f;
+  --app-border-strong: #2a3a2e;
+  --app-border-hover: #34513d;
+  --app-text: #e8f3e9;
+  --app-text-strong: #f7fff7;
+  --app-text-muted: #a7b8a9;
+  --app-text-subtle: #8ea090;
+  --app-table-head: #111b15;
+  --app-row-hover: #132018;
+  --app-hover: #152119;
+  --app-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
+  --app-shadow-soft: 0 14px 30px rgba(0, 0, 0, 0.22);
+  --input-bg: #101914;
+  --input-border: #233327;
+  --auth-shell-background: linear-gradient(180deg, #071109 0%, #0b1510 55%, #040805 100%);
+  --auth-overlay: linear-gradient(135deg, rgba(8, 14, 10, 0.82), rgba(8, 15, 11, 0.9));
+  --auth-dark-orb: rgba(69, 225, 95, 0.08);
 }
 
 @theme inline {
@@ -25,13 +85,16 @@
 
 html {
   background: var(--background);
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(69, 225, 95, 0.12), transparent 28%),
-    linear-gradient(180deg, #06110a 0%, #010302 100%);
+  background: var(--body-background);
   color: var(--foreground);
   font-family: var(--font-saira), sans-serif;
 }
@@ -63,6 +126,140 @@ a {
 
 .font-display {
   font-family: var(--font-unbounded), sans-serif;
+}
+
+.theme-page {
+  background: var(--app-page-bg);
+  color: var(--app-text);
+}
+
+.theme-shell-surface {
+  background: var(--app-shell-surface);
+  border-color: var(--app-border);
+}
+
+.theme-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow);
+}
+
+.theme-card-soft {
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+}
+
+.theme-card-interactive {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.theme-card-interactive:hover {
+  border-color: var(--app-border-hover);
+  box-shadow: var(--app-shadow);
+}
+
+.theme-dropdown {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 22px 50px rgba(9, 19, 9, 0.14);
+}
+
+.theme-menu-item {
+  color: var(--app-text);
+}
+
+.theme-menu-item:hover {
+  background: var(--app-hover);
+}
+
+.theme-nav-item {
+  color: var(--app-text-muted);
+}
+
+.theme-nav-item:hover {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+.theme-nav-item-active {
+  background: var(--app-surface-soft);
+  color: var(--app-text-strong);
+}
+
+.theme-nav-icon {
+  color: var(--app-text);
+}
+
+.theme-title {
+  color: var(--app-text-strong);
+}
+
+.theme-text {
+  color: var(--app-text);
+}
+
+.theme-text-muted {
+  color: var(--app-text-muted);
+}
+
+.theme-text-subtle {
+  color: var(--app-text-subtle);
+}
+
+.theme-icon-button {
+  color: var(--app-text);
+}
+
+.theme-icon-button:hover {
+  background: var(--app-hover);
+}
+
+.theme-pill-soft {
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+}
+
+.theme-table-head {
+  background: var(--app-table-head);
+}
+
+.theme-table-row {
+  color: var(--app-text);
+}
+
+.theme-table-row:hover {
+  background: var(--app-row-hover);
+}
+
+.theme-input {
+  background: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--app-text-strong);
+}
+
+.theme-input::placeholder {
+  color: var(--app-text-subtle);
+}
+
+.theme-auth-shell {
+  background: var(--auth-shell-background);
+  color: var(--app-text-strong);
+}
+
+.theme-auth-overlay {
+  background: var(--auth-overlay);
+}
+
+.theme-auth-dark-orb {
+  background: var(--auth-dark-orb);
+}
+
+.theme-auth-card {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 28px 80px rgba(7, 17, 8, 0.12);
 }
 
 .reveal {

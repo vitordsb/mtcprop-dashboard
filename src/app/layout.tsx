@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Saira, Unbounded } from "next/font/google";
 
+import { ThemeScript } from "@/components/theme/theme-script";
+
 import "./globals.css";
 
 const saira = Saira({
@@ -32,9 +34,14 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      data-theme="light"
+      suppressHydrationWarning
       className={`${saira.variable} ${unbounded.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ThemeScript />
+        {children}
+      </body>
     </html>
   );
 }

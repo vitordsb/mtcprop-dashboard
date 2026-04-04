@@ -1,0 +1,3 @@
+export const THEME_STORAGE_KEY = "mtcprop-theme";
+
+export type ThemeMode = "light" | "dark";

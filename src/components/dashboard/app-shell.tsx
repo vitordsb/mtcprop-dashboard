@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 
-import { Bell, Moon } from "lucide-react";
+import { Bell } from "lucide-react";
 
 import { MtcpropMark } from "@/components/brand/mtcprop-mark";
 import { ProfileMenu } from "@/components/dashboard/profile-menu";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { getAdminInitial, requireCurrentAdminUser } from "@/lib/auth/server";
 import type { CompanySnapshot } from "@/types/dashboard";
 
@@ -22,16 +23,16 @@ export async function DashboardShell({
   const adminUser = await requireCurrentAdminUser();
 
   return (
-    <div className="min-h-screen bg-[#f3f6fa] text-[#071108]">
+    <div className="theme-page min-h-screen">
       <div className="grid min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="border-b border-[#e4ebe5] bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
-          <div className="border-b border-[#edf2ed] px-6 py-7">
+        <aside className="theme-shell-surface border-b lg:min-h-screen lg:border-b-0 lg:border-r">
+          <div className="border-b border-[var(--app-border-soft)] px-6 py-7">
             <MtcpropMark align="left" size="compact" />
           </div>
 
           <SidebarNav />
 
-          <div className="hidden border-t border-[#edf2ed] px-6 py-5 lg:block">
+          <div className="hidden border-t border-[var(--app-border-soft)] px-6 py-5 lg:block">
             <div
               className="relative overflow-hidden rounded-[20px] border border-[rgba(69,225,95,0.14)] bg-[#071108] p-4 text-white"
               style={{
@@ -65,12 +66,12 @@ export async function DashboardShell({
         </aside>
 
         <div className="min-w-0">
-          <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-[#e4ebe5] bg-white/95 px-6 backdrop-blur sm:px-8">
+          <header className="theme-shell-surface sticky top-0 z-20 flex h-20 items-center justify-between border-b px-6 backdrop-blur sm:px-8">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-medium tracking-[-0.04em] text-[#101b12]">
+              <h1 className="theme-title text-xl font-medium tracking-[-0.04em]">
                 {pageTitle}
               </h1>
-              <span className="hidden rounded-lg border border-[#dde6de] bg-[#f7faf7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#68826c] sm:inline-flex">
+              <span className="theme-pill-soft theme-text-subtle hidden rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] sm:inline-flex">
                 Painel interno
               </span>
             </div>
@@ -78,16 +79,11 @@ export async function DashboardShell({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-[12px] text-[#142116] transition hover:bg-[#f1f5f1]"
+                className="theme-icon-button flex h-10 w-10 items-center justify-center rounded-[12px] transition"
               >
                 <Bell className="h-5 w-5" />
               </button>
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-[12px] text-[#142116] transition hover:bg-[#f1f5f1]"
-              >
-                <Moon className="h-5 w-5" />
-              </button>
+              <ThemeToggle />
               <ProfileMenu initial={getAdminInitial(adminUser)} />
             </div>
           </header>
