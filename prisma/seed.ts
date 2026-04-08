@@ -2,10 +2,28 @@ import {
   PrismaClient,
   type UserRole,
 } from "@prisma/client";
+import { hash } from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const internalAdmins = [
+const PASSWORD_SALT_ROUNDS = 12;
+const DEFAULT_YAGO_OWNER_PASSWORD_HASH =
+  "$2b$12$cOHGMsscfR6gE8piMlVJGeed1lukQTVbieX4P3uAldu1URwNde6ZW";
+
+async function resolveYagoPasswordHash() {
+  const fixedOwnerPassword = process.env.YAGO_OWNER_PASSWORD?.trim();
+
+  if (!fixedOwnerPassword) {
+    return DEFAULT_YAGO_OWNER_PASSWORD_HASH;
+  }
+
+  return hash(fixedOwnerPassword, PASSWORD_SALT_ROUNDS);
+}
+
+async function resolveInternalAdmins() {
+  const yagoPasswordHash = await resolveYagoPasswordHash();
+
+  return [
   {
     name: "Vitor DSB",
     email: "vitordsb2019@gmail.com",
@@ -15,13 +33,15 @@ const internalAdmins = [
   {
     name: "Yago Ribeiro",
     email: "yagoribeirotrader@gmail.com",
-    passwordHash: "$2b$12$lPjytegyQDY2kPwYLk6eg.gU6r2W.EOlKOP3O048tnXN/RMycCZXS",
+    passwordHash: yagoPasswordHash,
     role: "OWNER" as UserRole,
   },
-];
+  ];
+}
 
 async function main() {
   const resetMode = process.env.SEED_MODE === "reset";
+  const internalAdmins = await resolveInternalAdmins();
 
   if (resetMode) {
     await prisma.accessGrant.deleteMany();
