@@ -58,7 +58,7 @@ export async function requireCurrentAdminUser() {
   const adminUser = await getCurrentAdminUser();
 
   if (!adminUser) {
-    redirect("/login");
+    redirect("/api/v1/auth/logout");
   }
 
   return adminUser;

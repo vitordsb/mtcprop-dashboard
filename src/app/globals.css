@@ -26,6 +26,17 @@
   --app-text-strong: #091309;
   --app-text-muted: #627364;
   --app-text-subtle: #7b8b7d;
+  --app-accent-text: #176124;
+  --app-accent-soft-bg: rgba(69, 225, 95, 0.08);
+  --app-accent-soft-border: rgba(69, 225, 95, 0.18);
+  --app-warning-text: #8a5b08;
+  --app-warning-bg: #fff8ea;
+  --app-warning-border: #f6dfb3;
+  --app-danger-text: #a73d3d;
+  --app-danger-bg: rgba(255, 123, 123, 0.08);
+  --app-danger-border: rgba(255, 123, 123, 0.24);
+  --app-link: #176124;
+  --app-link-hover: #071108;
   --app-table-head: #fafbfc;
   --app-row-hover: #fbfcfb;
   --app-hover: #f3f7f3;
@@ -33,6 +44,9 @@
   --app-shadow-soft: 0 14px 30px rgba(12, 25, 13, 0.04);
   --input-bg: #fcfdfc;
   --input-border: #d8e2d9;
+  --app-button-primary-bg: #071108;
+  --app-button-primary-text: #f8fff8;
+  --app-button-primary-hover: #102116;
   --auth-shell-background: linear-gradient(180deg, #eef4ee 0%, #f8fbf8 55%, #edf5ee 100%);
   --auth-overlay: linear-gradient(135deg, rgba(248, 251, 248, 0.92), rgba(240, 246, 241, 0.96));
   --auth-dark-orb: rgba(7, 17, 8, 0.08);
@@ -60,6 +74,17 @@ html[data-theme="dark"] {
   --app-text-strong: #f7fff7;
   --app-text-muted: #a7b8a9;
   --app-text-subtle: #8ea090;
+  --app-accent-text: #7ef18f;
+  --app-accent-soft-bg: rgba(69, 225, 95, 0.12);
+  --app-accent-soft-border: rgba(69, 225, 95, 0.24);
+  --app-warning-text: #f2d48b;
+  --app-warning-bg: rgba(245, 200, 107, 0.12);
+  --app-warning-border: rgba(245, 200, 107, 0.24);
+  --app-danger-text: #ffb3b3;
+  --app-danger-bg: rgba(255, 123, 123, 0.12);
+  --app-danger-border: rgba(255, 123, 123, 0.26);
+  --app-link: #8df49a;
+  --app-link-hover: #c8ffd0;
   --app-table-head: #111b15;
   --app-row-hover: #132018;
   --app-hover: #152119;
@@ -67,6 +92,9 @@ html[data-theme="dark"] {
   --app-shadow-soft: 0 14px 30px rgba(0, 0, 0, 0.22);
   --input-bg: #101914;
   --input-border: #233327;
+  --app-button-primary-bg: #45e15f;
+  --app-button-primary-text: #071108;
+  --app-button-primary-hover: #62f079;
   --auth-shell-background: linear-gradient(180deg, #071109 0%, #0b1510 55%, #040805 100%);
   --auth-overlay: linear-gradient(135deg, rgba(8, 14, 10, 0.82), rgba(8, 15, 11, 0.9));
   --auth-dark-orb: rgba(69, 225, 95, 0.08);
@@ -219,6 +247,50 @@ a {
 .theme-pill-soft {
   background: var(--app-surface-soft);
   border: 1px solid var(--app-border-soft);
+}
+
+.theme-accent-soft {
+  background: var(--app-accent-soft-bg);
+  border: 1px solid var(--app-accent-soft-border);
+  color: var(--app-accent-text);
+}
+
+.theme-accent-icon {
+  background: var(--app-accent-soft-bg);
+  color: var(--app-accent-text);
+}
+
+.theme-accent-text {
+  color: var(--app-accent-text);
+}
+
+.theme-warning-box {
+  background: var(--app-warning-bg);
+  border: 1px solid var(--app-warning-border);
+  color: var(--app-warning-text);
+}
+
+.theme-danger-box {
+  background: var(--app-danger-bg);
+  border: 1px solid var(--app-danger-border);
+  color: var(--app-danger-text);
+}
+
+.theme-link {
+  color: var(--app-link);
+}
+
+.theme-link:hover {
+  color: var(--app-link-hover);
+}
+
+.theme-button-primary {
+  background: var(--app-button-primary-bg);
+  color: var(--app-button-primary-text);
+}
+
+.theme-button-primary:hover {
+  background: var(--app-button-primary-hover);
 }
 
 .theme-table-head {

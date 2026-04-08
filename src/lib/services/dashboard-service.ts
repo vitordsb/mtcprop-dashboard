@@ -6,6 +6,7 @@ import type {
 import { unstable_cache } from "next/cache";
 
 import { getCompanySnapshot } from "@/lib/company-snapshot";
+import { CACHE_TAGS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import type {
   AccessModule,
@@ -179,36 +180,58 @@ export const dashboardService = {
 const getCachedDashboardOverview = unstable_cache(
   async (): Promise<DashboardOverview> => {
     const [
-      activeStudents,
-      activeEnrollments,
-      pendingEnrollments,
-      activeAccess,
-      pendingAccess,
+      [baseStatsResult],
       stageCounts,
       enrollmentCounts,
       moduleCounts,
-      products,
       productEnrollmentCounts,
+      products,
       recentStudents,
     ] = await Promise.all([
-      prisma.student.count({ where: { isActive: true } }),
-      prisma.enrollment.count({ where: { status: "ACTIVE" } }),
-      prisma.enrollment.count({ where: { status: "PENDING" } }),
-      prisma.accessGrant.count({ where: { status: "ACTIVE" } }),
-      prisma.accessGrant.count({ where: { status: "PENDING" } }),
-      prisma.student.groupBy({
-        by: ["stage"],
-        where: { isActive: true },
-        _count: { _all: true },
-      }),
-      prisma.enrollment.groupBy({
-        by: ["status"],
-        _count: { _all: true },
-      }),
-      prisma.accessGrant.groupBy({
-        by: ["moduleKey", "status"],
-        _count: { _all: true },
-      }),
+      // 1. Raw query para todas as contagens base (apenas 1 ida ao BD em vez de 5)
+      prisma.$queryRaw<
+        Array<{
+          activeStudents: bigint;
+          activeEnrollments: bigint;
+          pendingEnrollments: bigint;
+          activeAccess: bigint;
+          pendingAccess: bigint;
+        }>
+      >`
+        SELECT 
+          (SELECT COUNT(*) FROM "Student" WHERE "isActive" = true) AS "activeStudents",
+          (SELECT COUNT(*) FROM "Enrollment" WHERE "status" = 'ACTIVE') AS "activeEnrollments",
+          (SELECT COUNT(*) FROM "Enrollment" WHERE "status" = 'PENDING') AS "pendingEnrollments",
+          (SELECT COUNT(*) FROM "AccessGrant" WHERE "status" = 'ACTIVE') AS "activeAccess",
+          (SELECT COUNT(*) FROM "AccessGrant" WHERE "status" = 'PENDING') AS "pendingAccess"
+      `,
+      // 2. Query de agrupamento da etapa dos estudantes
+      prisma.$queryRaw<Array<{ stage: DbStudentStage; count: bigint }>>`
+        SELECT "stage", COUNT(*) as "count" 
+        FROM "Student" 
+        WHERE "isActive" = true 
+        GROUP BY "stage"
+      `,
+      // 3. Status de todos os planos
+      prisma.$queryRaw<Array<{ status: EnrollmentStatus; count: bigint }>>`
+        SELECT "status", COUNT(*) as "count" 
+        FROM "Enrollment" 
+        GROUP BY "status"
+      `,
+      // 4. Modulos e seus respectivos status de acesso
+      prisma.$queryRaw<Array<{ moduleKey: string; status: DbAccessStatus; count: bigint }>>`
+        SELECT "moduleKey", "status", COUNT(*) as "count" 
+        FROM "AccessGrant" 
+        GROUP BY "moduleKey", "status"
+      `,
+      // 5. Total de alunos ativos por produto
+      prisma.$queryRaw<Array<{ productId: string; count: bigint }>>`
+        SELECT "productId", COUNT(*) as "count" 
+        FROM "Enrollment" 
+        WHERE "status" = 'ACTIVE' 
+        GROUP BY "productId"
+      `,
+      // 6. Resgatar descricoes dos produtos (Tabela minúscula, Prisma ORM comum)
       prisma.product.findMany({
         where: { isActive: true },
         orderBy: { name: "asc" },
@@ -220,11 +243,7 @@ const getCachedDashboardOverview = unstable_cache(
           maxContracts: true,
         },
       }),
-      prisma.enrollment.groupBy({
-        by: ["productId"],
-        where: { status: "ACTIVE" },
-        _count: { _all: true },
-      }),
+      // 7. Ultimos traders para o log recente
       prisma.student.findMany({
         where: { isActive: true },
         orderBy: { updatedAt: "desc" },
@@ -246,14 +265,20 @@ const getCachedDashboardOverview = unstable_cache(
       }),
     ]);
 
+    const activeStudents = Number(baseStatsResult?.activeStudents ?? 0);
+    const activeEnrollments = Number(baseStatsResult?.activeEnrollments ?? 0);
+    const pendingEnrollments = Number(baseStatsResult?.pendingEnrollments ?? 0);
+    const activeAccess = Number(baseStatsResult?.activeAccess ?? 0);
+    const pendingAccess = Number(baseStatsResult?.pendingAccess ?? 0);
+
     const stageCountMap = new Map(
-      stageCounts.map((item) => [item.stage, item._count._all]),
+      stageCounts.map((item) => [item.stage, Number(item.count)]),
     );
     const enrollmentCountMap = new Map<EnrollmentStatus, number>(
-      enrollmentCounts.map((item) => [item.status, item._count._all]),
+      enrollmentCounts.map((item) => [item.status, Number(item.count)]),
     );
     const productEnrollmentCountMap = new Map(
-      productEnrollmentCounts.map((item) => [item.productId, item._count._all]),
+      productEnrollmentCounts.map((item) => [item.productId, Number(item.count)]),
     );
 
     const liveDeskStudents = stageCountMap.get("LIVE_DESK") ?? 0;
@@ -295,15 +320,15 @@ const getCachedDashboardOverview = unstable_cache(
       };
 
       if (item.status === "ACTIVE") {
-        current.active = item._count._all;
+        current.active = Number(item.count);
       }
 
       if (item.status === "PENDING") {
-        current.pending = item._count._all;
+        current.pending = Number(item.count);
       }
 
       if (item.status === "BLOCKED" || item.status === "EXPIRED") {
-        current.blocked += item._count._all;
+        current.blocked += Number(item.count);
       }
 
       accessModuleAccumulator.set(item.moduleKey, current);
@@ -395,9 +420,9 @@ const getCachedDashboardOverview = unstable_cache(
       }),
     };
   },
-  ["dashboard-overview"],
+  [CACHE_TAGS.DASHBOARD_OVERVIEW],
   {
     revalidate: 45,
-    tags: ["dashboard-overview"],
+    tags: [CACHE_TAGS.DASHBOARD_OVERVIEW],
   },
 );

@@ -4,6 +4,7 @@ import {
   Banknote,
   BarChart3,
   ClipboardList,
+  KeyRound,
   LayoutDashboard,
   Layers,
   ShoppingCart,
@@ -23,6 +24,11 @@ const navItems = [
     icon: ShoppingCart,
     label: "Vendas",
     href: "/dashboard/vendas",
+  },
+  {
+    icon: KeyRound,
+    label: "Acessos",
+    href: "/dashboard/acessos",
   },
   {
     icon: Layers,

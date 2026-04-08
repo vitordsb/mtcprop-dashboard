@@ -10,14 +10,14 @@ export default async function EstatisticasPage() {
 
   return (
     <DashboardShell company={company} pageTitle="Estatísticas">
-      <div className="flex flex-col items-center justify-center rounded-[22px] border border-dashed border-[#dfe8e0] bg-white py-24 text-center shadow-[0_18px_40px_rgba(12,25,13,0.04)]">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-[18px] bg-[rgba(69,225,95,0.1)] text-[#176124]">
+      <div className="theme-card flex flex-col items-center justify-center rounded-[22px] border-dashed py-24 text-center">
+        <div className="theme-accent-icon mb-5 flex h-14 w-14 items-center justify-center rounded-[18px]">
           <BarChart3 className="h-6 w-6" />
         </div>
-        <h2 className="text-xl font-semibold tracking-[-0.04em] text-[#0c160d]">
+        <h2 className="theme-title text-xl font-semibold tracking-[-0.04em]">
           Estatísticas
         </h2>
-        <p className="mt-2 max-w-sm text-sm leading-6 text-[#627364]">
+        <p className="theme-text-muted mt-2 max-w-sm text-sm leading-6">
           Métricas de performance, funil de conversão, receita e indicadores
           operacionais da mesa. Em desenvolvimento.
         </p>

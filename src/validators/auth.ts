@@ -18,3 +18,25 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Informe um e-mail valido."),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().trim().min(20, "Link de recuperacao invalido."),
+    password: strongPasswordSchema,
+    confirmPassword: z.string().min(1, "Confirme sua nova senha."),
+  })
+  .refine((input) => input.password === input.confirmPassword, {
+    message: "As senhas nao coincidem.",
+    path: ["confirmPassword"],
+  });
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

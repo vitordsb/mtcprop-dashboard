@@ -33,11 +33,35 @@ function getAuthSecret() {
   return new TextEncoder().encode(authSecret);
 }
 
+function shouldUseSecureCookie() {
+  const appUrl = process.env.APP_URL?.trim();
+
+  if (!appUrl) {
+    return process.env.NODE_ENV === "production";
+  }
+
+  try {
+    const parsedUrl = new URL(appUrl);
+    const isLocalHostname =
+      parsedUrl.hostname === "localhost" ||
+      parsedUrl.hostname === "127.0.0.1" ||
+      parsedUrl.hostname === "0.0.0.0";
+
+    if (isLocalHostname && parsedUrl.protocol === "http:") {
+      return false;
+    }
+
+    return parsedUrl.protocol === "https:";
+  } catch {
+    return process.env.NODE_ENV === "production";
+  }
+}
+
 function getBaseCookieOptions() {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookie(),
     path: "/",
     priority: "high" as const,
   };

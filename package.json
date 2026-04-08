@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.29.3",
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev --turbo --port 3002",
     "prebuild": "pnpm db:generate",
     "build": "next build",
     "start": "next start",
@@ -16,8 +16,11 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:reset": "SEED_MODE=reset tsx prisma/seed.ts",
+    "db:check": "tsx scripts/check-database-connection.ts",
+    "db:supabase:env": "node scripts/print-supabase-env.mjs",
     "db:bootstrap": "pnpm db:generate && pnpm db:migrate:deploy && pnpm db:seed",
     "db:bootstrap:reset": "pnpm db:generate && pnpm db:migrate:deploy && pnpm db:seed:reset",
+    "db:supabase:bootstrap": "pnpm db:generate && pnpm db:migrate:deploy && pnpm db:seed && pnpm db:check",
     "db:studio": "prisma studio"
   },
   "dependencies": {
@@ -27,6 +30,7 @@
     "jose": "^6.2.2",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
+    "nodemailer": "^8.0.5",
     "prisma": "^6.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -36,6 +40,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

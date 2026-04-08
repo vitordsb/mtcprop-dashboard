@@ -99,7 +99,7 @@ export function DashboardOverviewView({ data }: DashboardOverviewProps) {
           <div className="theme-card rounded-[22px] p-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
               <div className="space-y-3">
-                <span className="inline-flex rounded-lg border border-[rgba(69,225,95,0.18)] bg-[rgba(69,225,95,0.08)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#176124]">
+                <span className="theme-accent-soft inline-flex rounded-lg px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]">
                   Base operacional
                 </span>
                 <div className="space-y-2">
@@ -137,7 +137,7 @@ export function DashboardOverviewView({ data }: DashboardOverviewProps) {
                 key={title}
                 className="theme-card-interactive rounded-[18px] p-5 transition"
               >
-                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-[14px] bg-[rgba(69,225,95,0.1)] text-[#176124]">
+                <div className="theme-accent-icon mb-5 flex h-11 w-11 items-center justify-center rounded-[14px]">
                   <Icon className="h-5 w-5" />
                 </div>
                 <h3 className="theme-title text-[1.15rem] font-semibold tracking-[-0.04em]">
@@ -146,7 +146,7 @@ export function DashboardOverviewView({ data }: DashboardOverviewProps) {
                 <p className="theme-text-muted mt-2 text-sm leading-6">
                   {description}
                 </p>
-                <div className="mt-5 flex items-center justify-between text-sm font-medium text-[#176124]">
+                <div className="theme-accent-text mt-5 flex items-center justify-between text-sm font-medium">
                   <span>{accent}</span>
                   <ArrowRight className="h-4 w-4" />
                 </div>
@@ -177,7 +177,7 @@ export function DashboardOverviewView({ data }: DashboardOverviewProps) {
                     </p>
                     <p className="theme-text-subtle text-sm">{description}</p>
                   </div>
-                  <div className="theme-text flex justify-center pt-6 transition group-hover:text-[#176124]">
+                  <div className="theme-text flex justify-center pt-6 transition group-hover:text-[var(--app-accent-text)]">
                     <Icon className="h-6 w-6" />
                   </div>
                 </div>

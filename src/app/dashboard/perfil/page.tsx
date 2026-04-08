@@ -58,16 +58,16 @@ export default async function DashboardProfilePage() {
   return (
     <DashboardShell company={data.company} pageTitle="My Profile">
       <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <section className="rounded-[22px] border border-[#dfe8e0] bg-white p-6 shadow-[0_18px_40px_rgba(12,25,13,0.05)]">
-          <span className="inline-flex rounded-[10px] border border-[rgba(69,225,95,0.2)] bg-[rgba(69,225,95,0.08)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#176124]">
+        <section className="theme-card rounded-[22px] p-6">
+          <span className="theme-accent-soft inline-flex rounded-[10px] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]">
             Area pessoal
           </span>
 
           <div className="mt-4 space-y-3">
-            <h2 className="font-display text-3xl tracking-[-0.06em] text-[#091309]">
+            <h2 className="theme-title font-display text-3xl tracking-[-0.06em]">
               Perfil administrativo
             </h2>
-            <p className="max-w-2xl text-sm leading-6 text-[#627364]">
+            <p className="theme-text-muted max-w-2xl text-sm leading-6">
               Esse espaco agora reflete o usuario autenticado no sistema
               interno da MTCprop, incluindo sessao protegida e dados reais do
               acesso administrativo.
@@ -78,32 +78,32 @@ export default async function DashboardProfilePage() {
             {profileItems.map(({ label, value, icon: Icon }) => (
               <article
                 key={label}
-                className="rounded-[18px] border border-[#e8eee8] bg-[#fbfdfb] p-4"
+                className="theme-card-soft rounded-[18px] p-4"
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[rgba(69,225,95,0.1)] text-[#176124]">
+                <div className="theme-accent-icon flex h-11 w-11 items-center justify-center rounded-[14px]">
                   <Icon className="h-5 w-5" />
                 </div>
-                <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6c7e6e]">
+                <p className="theme-text-subtle mt-4 text-[11px] font-semibold uppercase tracking-[0.18em]">
                   {label}
                 </p>
-                <p className="mt-2 text-[15px] font-semibold leading-6 text-[#0c160d]">
+                <p className="theme-title mt-2 text-[15px] font-semibold leading-6">
                   {value}
                 </p>
               </article>
             ))}
           </div>
 
-        <div className="mt-6 rounded-[18px] border border-[#e8eee8] bg-[#f8fbf8] px-4 py-4 text-sm leading-6 text-[#607162]">
+        <div className="theme-card-soft theme-text-muted mt-6 rounded-[18px] px-4 py-4 text-sm leading-6">
           <p>
             Nome:{" "}
-            <span className="font-semibold text-[#0c160d]">{adminUser.name}</span>
+            <span className="theme-title font-semibold">{adminUser.name}</span>
           </p>
           <p>
-            Empresa: <span className="font-semibold text-[#0c160d]">{data.company.name}</span>
+            Empresa: <span className="theme-title font-semibold">{data.company.name}</span>
           </p>
           <p>
             Ultimo login:{" "}
-            <span className="font-semibold text-[#0c160d]">
+            <span className="theme-title font-semibold">
               {adminUser.lastLoginAt
                 ? formatter.format(adminUser.lastLoginAt)
                 : "Primeiro acesso ainda nao registrado"}
@@ -115,7 +115,7 @@ export default async function DashboardProfilePage() {
                 href={data.company.website}
                 target="_blank"
                 rel="noreferrer"
-                className="font-semibold text-[#176124] transition hover:text-[#071108]"
+                className="theme-link font-semibold transition"
               >
                 {data.company.website}
               </a>
@@ -123,12 +123,12 @@ export default async function DashboardProfilePage() {
           </div>
         </section>
 
-        <section className="rounded-[22px] border border-[#dfe8e0] bg-white p-6 shadow-[0_18px_40px_rgba(12,25,13,0.05)]">
+        <section className="theme-card rounded-[22px] p-6">
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold tracking-[-0.04em] text-[#0c160d]">
+            <h3 className="theme-title text-xl font-semibold tracking-[-0.04em]">
               Seguranca e acesso
             </h3>
-            <p className="text-sm leading-6 text-[#627364]">
+            <p className="theme-text-muted text-sm leading-6">
               Camada atual de seguranca do login interno e base para evoluirmos
               depois com troca de senha e permissao por colaborador.
             </p>
@@ -138,15 +138,15 @@ export default async function DashboardProfilePage() {
             {securityItems.map(({ title, description, icon: Icon }) => (
               <article
                 key={title}
-                className="rounded-[18px] border border-[#e8eee8] bg-[#fbfdfb] p-4"
+                className="theme-card-soft rounded-[18px] p-4"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[rgba(69,225,95,0.1)] text-[#176124]">
+                  <div className="theme-accent-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px]">
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-[#0c160d]">{title}</p>
-                    <p className="mt-2 text-sm leading-6 text-[#627364]">
+                    <p className="theme-title font-semibold">{title}</p>
+                    <p className="theme-text-muted mt-2 text-sm leading-6">
                       {description}
                     </p>
                   </div>

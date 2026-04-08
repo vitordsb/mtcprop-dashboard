@@ -27,11 +27,17 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isDashboardRoute && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    if (sessionToken) {
+      response.cookies.delete(SESSION_COOKIE_NAME);
+    }
+    return response;
   }
 
   return NextResponse.next();
 }
+
+export default proxy;
 
 export const config = {
   matcher: ["/login", "/registro", "/dashboard/:path*"],

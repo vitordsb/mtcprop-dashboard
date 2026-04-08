@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -10,6 +11,7 @@ type AuthMode = "login" | "register";
 
 type AuthFormCardProps = {
   mode: AuthMode;
+  notice?: string | null;
 };
 
 type LoginValues = {
@@ -20,7 +22,7 @@ type LoginValues = {
 const baseFieldClassName =
   "theme-input w-full rounded-[12px] border px-4 py-3.5 text-[15px] outline-none transition focus:border-[#45e15f] focus:ring-4 focus:ring-[rgba(69,225,95,0.14)]";
 
-export function AuthFormCard({ mode }: AuthFormCardProps) {
+export function AuthFormCard({ mode, notice }: AuthFormCardProps) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
   return (
     <div className="theme-auth-card reveal rounded-[16px] border p-6 backdrop-blur-xl sm:p-8">
       <div className="mb-8 space-y-5 text-center">
-        <div className="inline-flex rounded-[10px] border border-[rgba(69,225,95,0.2)] bg-[rgba(69,225,95,0.08)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#176124]">
+        <div className="theme-accent-soft inline-flex rounded-[10px] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em]">
           Ambiente interno da MTCprop
         </div>
 
@@ -98,6 +100,12 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
+        {notice ? (
+          <p className="theme-accent-soft rounded-[12px] px-4 py-3 text-sm">
+            {notice}
+          </p>
+        ) : null}
+
         <div className="space-y-2">
           <label
             className="theme-text block text-sm font-medium"
@@ -161,7 +169,7 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
         </div>
 
         {error ? (
-          <p className="rounded-[12px] border border-[rgba(255,123,123,0.24)] bg-[rgba(255,123,123,0.08)] px-4 py-3 text-sm text-[#a73d3d]">
+          <p className="theme-danger-box rounded-[12px] px-4 py-3 text-sm">
             {error}
           </p>
         ) : null}
@@ -169,7 +177,7 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
         <button
           type="submit"
           disabled={pending}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-[12px] bg-[#071108] px-5 py-3.5 text-base font-semibold text-white transition hover:bg-[#0f1d12] disabled:cursor-not-allowed disabled:opacity-70"
+          className="theme-button-primary mt-2 flex w-full items-center justify-center gap-2 rounded-[12px] px-5 py-3.5 text-base font-semibold transition disabled:cursor-not-allowed disabled:opacity-70"
         >
           {pending ? "Entrando..." : "Entrar no painel"}
           <ArrowRight className="h-4 w-4" />
@@ -177,13 +185,10 @@ export function AuthFormCard({ mode }: AuthFormCardProps) {
       </form>
 
       <div className="theme-text-muted mt-6 flex items-center justify-between gap-4 text-sm">
-        <a
-          href="mailto:suporte@mtcprop.com.br?subject=Recuperacao%20de%20acesso%20MTCprop"
-          className="transition hover:text-[#071108]"
-        >
+        <Link href="/recuperar-senha" className="theme-link transition">
           Esqueci minha senha
-        </a>
-        <span className="text-right leading-5 text-[#7a8a7c]">
+        </Link>
+        <span className="theme-text-subtle text-right leading-5">
           Novos acessos sao liberados internamente.
         </span>
       </div>
