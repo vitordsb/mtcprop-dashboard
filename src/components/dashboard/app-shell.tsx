@@ -23,16 +23,16 @@ export async function DashboardShell({
   const adminUser = await requireCurrentAdminUser();
 
   return (
-    <div className="theme-page min-h-screen">
-      <div className="grid min-h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="theme-shell-surface border-b lg:min-h-screen lg:border-b-0 lg:border-r">
+    <div className="theme-page h-screen overflow-hidden">
+      <div className="grid h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="theme-shell-surface flex h-screen flex-col overflow-hidden border-b lg:border-b-0 lg:border-r">
           <div className="border-b border-[var(--app-border-soft)] px-6 py-7">
             <MtcpropMark align="left" size="compact" />
           </div>
 
           <SidebarNav />
 
-          <div className="hidden border-t border-[var(--app-border-soft)] px-6 py-5 lg:block">
+          <div className="hidden shrink-0 border-t border-[var(--app-border-soft)] px-6 py-5 lg:block">
             <div
               className="relative overflow-hidden rounded-[20px] border border-[rgba(69,225,95,0.14)] bg-[#071108] p-4 text-white"
               style={{
@@ -65,8 +65,8 @@ export async function DashboardShell({
           </div>
         </aside>
 
-        <div className="min-w-0">
-          <header className="theme-shell-surface sticky top-0 z-20 flex h-20 items-center justify-between border-b px-6 backdrop-blur sm:px-8">
+        <div className="flex h-screen min-w-0 min-h-0 flex-col overflow-hidden">
+          <header className="theme-shell-surface z-20 flex h-20 shrink-0 items-center justify-between border-b px-6 backdrop-blur sm:px-8">
             <div className="flex items-center gap-3">
               <h1 className="theme-title text-xl font-medium tracking-[-0.04em]">
                 {pageTitle}
@@ -88,7 +88,7 @@ export async function DashboardShell({
             </div>
           </header>
 
-          <main className="min-w-0 p-6 sm:p-8">{children}</main>
+          <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6 sm:p-8">{children}</main>
         </div>
       </div>
     </div>

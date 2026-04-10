@@ -1,15 +1,27 @@
 import {
   ArrowLeft,
+  BadgeCheck,
+  Ban,
+  CircleDashed,
   CreditCard,
   Landmark,
+  RefreshCcw,
+  Receipt,
   MessageSquareText,
   QrCode,
   ReceiptText,
   WalletCards,
+  Wallet,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { DashboardShell } from "@/components/dashboard/app-shell";
+import {
+  getSemanticStatusBadgeClass,
+  getSemanticStatusTone,
+} from "@/components/dashboard/status-badge";
 import type { SaleDetailOverview, SaleDetailTab } from "@/types/sales";
 
 type SaleDetailViewProps = {
@@ -36,6 +48,26 @@ function DetailField({ label, value }: { label: string; value: string | null | u
       <p className="theme-title mt-2 text-[15px] font-medium">
         {value && value.trim() ? value : "—"}
       </p>
+    </div>
+  );
+}
+
+function SectionTitle({
+  title,
+  action,
+}: {
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-6 flex items-center justify-between gap-4">
+      <div>
+        <div className="mb-3 h-[2px] w-10 rounded-full bg-[var(--brand)]" />
+        <h3 className="theme-title text-[22px] font-semibold tracking-[-0.05em]">
+          {title}
+        </h3>
+      </div>
+      {action}
     </div>
   );
 }
@@ -80,17 +112,36 @@ function StatusPill({
   label: string | null;
   code: string | null;
 }) {
-  const normalized = (code ?? "").toLowerCase();
-  const className = normalized === "approved" || normalized === "completed"
-    ? "bg-[rgba(63,184,107,0.14)] text-[#319247]"
-    : normalized === "canceled" || normalized === "refunded" || normalized === "chargeback"
-      ? "bg-[rgba(217,83,79,0.12)] text-[#d9534f]"
-      : "bg-[rgba(211,122,22,0.12)] text-[#d37a16]";
+  const tone = getSemanticStatusTone(code ?? label);
+  const Icon = tone === "success" ? BadgeCheck : tone === "danger" ? XCircle : CircleDashed;
 
   return (
-    <span className={`inline-flex rounded-[999px] px-4 py-2 text-sm font-semibold ${className}`}>
+    <span
+      className={`inline-flex items-center gap-2 rounded-[999px] border px-4 py-2 text-sm font-semibold ${getSemanticStatusBadgeClass(
+        code ?? label,
+      )}`}
+    >
+      <Icon className="h-4 w-4" />
       {label || "Não informado"}
     </span>
+  );
+}
+
+function HeaderAction({
+  label,
+  icon,
+}: {
+  label: string;
+  icon: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      className="theme-text-subtle inline-flex items-center gap-2 rounded-[12px] border border-[var(--app-border-soft)] bg-[var(--app-surface)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--app-hover)]"
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
@@ -117,7 +168,19 @@ export function SaleDetailView({ data, activeTab }: SaleDetailViewProps) {
             </p>
           </div>
 
-          <StatusPill label={sale.statusLabel} code={sale.statusCode} />
+          {activeTab === "detail" ? (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <HeaderAction label="Atualizar status" icon={<RefreshCcw className="h-4 w-4" />} />
+              <HeaderAction label="Reenviar" icon={<RefreshCcw className="h-4 w-4" />} />
+              <HeaderAction label="Informar nota fiscal" icon={<Receipt className="h-4 w-4" />} />
+              {sale.refundAvailable ? (
+                <HeaderAction label="Reembolsar" icon={<Wallet className="h-4 w-4" />} />
+              ) : null}
+              {sale.chargebackAvailable ? (
+                <HeaderAction label="Marcar como chargeback" icon={<Ban className="h-4 w-4" />} />
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="theme-shell-surface rounded-[22px] border border-[var(--app-border-soft)] px-4 py-3 sm:px-6">
@@ -144,14 +207,10 @@ export function SaleDetailView({ data, activeTab }: SaleDetailViewProps) {
         {activeTab === "detail" ? (
           <div className="space-y-6">
             <section className="theme-card rounded-[24px] p-6">
-              <div className="mb-6 flex items-center justify-between gap-4">
-                <div>
-                  <div className="mb-3 h-[2px] w-10 rounded-full bg-[var(--brand)]" />
-                  <h3 className="theme-title text-[30px] font-semibold tracking-[-0.05em]">
-                    Detalhe
-                  </h3>
-                </div>
-              </div>
+              <SectionTitle
+                title="Detalhe"
+                action={<StatusPill label={sale.statusLabel} code={sale.statusCode} />}
+              />
 
               <div className="grid gap-6 md:grid-cols-3">
                 <DetailField label="Código" value={sale.code} />
@@ -167,24 +226,24 @@ export function SaleDetailView({ data, activeTab }: SaleDetailViewProps) {
             </section>
 
             <section className="theme-card rounded-[24px] p-6">
-              <div className="mb-6 flex items-center justify-between gap-4">
-                <div>
-                  <div className="mb-3 h-[2px] w-10 rounded-full bg-[var(--brand)]" />
-                  <h3 className="theme-title text-[30px] font-semibold tracking-[-0.05em]">
-                    Pagamento
-                  </h3>
-                </div>
-
-                <div className="theme-accent-soft inline-flex items-center gap-2 rounded-[12px] px-4 py-2 text-sm font-medium">
-                  {getPaymentIcon(sale.paymentMethod)}
-                  {sale.paymentMethodLabel || "Pagamento não informado"}
-                </div>
-              </div>
+              <SectionTitle
+                title="Pagamento"
+                action={
+                  <div
+                    title={sale.paymentMethodLabel || "Pagamento não informado"}
+                    className="theme-accent-soft inline-flex items-center gap-2 rounded-[12px] px-4 py-2 text-sm font-medium"
+                  >
+                    {getPaymentIcon(sale.paymentMethod)}
+                    {sale.paymentMethodLabel || "Pagamento não informado"}
+                  </div>
+                }
+              />
 
               <div className="grid gap-6 md:grid-cols-3">
                 <DetailField label="Forma de pagamento" value={sale.paymentMethodLabel} />
                 <DetailField label="Parcelas" value={sale.installmentsLabel} />
                 <DetailField label="Produto" value={sale.productAmountLabel} />
+                <DetailField label="Parcelamento" value={sale.installmentInterestLabel} />
                 <DetailField label="Frete" value={sale.shippingFeeLabel} />
                 <DetailField label="Desconto" value={sale.discountValueLabel} />
                 <DetailField label="Imposto" value={sale.taxValueLabel} />
@@ -192,17 +251,11 @@ export function SaleDetailView({ data, activeTab }: SaleDetailViewProps) {
                 <DetailField label="Marketplace" value={sale.marketplaceValueLabel} />
                 <DetailField label="Total" value={sale.totalLabel} />
                 <DetailField label="Líquido" value={sale.netLabel} />
-                <DetailField label="Checkout" value={sale.checkoutUrl} />
               </div>
             </section>
 
             <section className="theme-card rounded-[24px] p-6">
-              <div className="mb-6">
-                <div className="mb-3 h-[2px] w-10 rounded-full bg-[var(--brand)]" />
-                <h3 className="theme-title text-[30px] font-semibold tracking-[-0.05em]">
-                  Produto
-                </h3>
-              </div>
+              <SectionTitle title="Produto" />
 
               <div className="grid gap-6 md:grid-cols-3">
                 <DetailField label="Unitário" value={sale.product.unitValueLabel} />
@@ -213,6 +266,8 @@ export function SaleDetailView({ data, activeTab }: SaleDetailViewProps) {
                 <DetailField label="Marketplace" value={sale.product.marketplaceName} />
                 <DetailField label="Marketplace ID" value={sale.product.marketplaceId} />
                 <DetailField label="Produtor" value={sale.product.producerName} />
+                <DetailField label="Checkout" value={sale.checkoutUrl} />
+                <DetailField label="Nota fiscal" value={sale.invoiceActionLabel} />
               </div>
             </section>
           </div>

@@ -61,7 +61,7 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="grid gap-1 px-4 py-5">
+    <nav className="grid min-h-0 flex-1 gap-1 overflow-y-auto px-4 py-5">
       {navItems.map(({ icon: Icon, label, href, exact }) => {
         const isActive = exact
           ? pathname === href

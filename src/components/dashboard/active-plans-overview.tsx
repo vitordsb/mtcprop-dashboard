@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 
 import { DashboardShell } from "@/components/dashboard/app-shell";
+import { getSemanticStatusBadgeClass } from "@/components/dashboard/status-badge";
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { actionCancelarLicenca, actionProvisionarLicenca } from "@/app/actions/nelogica-actions";
 import type { ActivePlanListItem, ActivePlansOverview } from "@/lib/services/plans-service";
@@ -23,26 +24,18 @@ function buildPageHref(page: number, q?: string) {
   return `/dashboard/planos-ativos?${params.toString()}`;
 }
 
-function getStatusTone(plan: ActivePlanListItem) {
-  if (plan.nelogicaLiveStatusCode === "3") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-
-  if (plan.nelogicaLiveStatusCode === "0") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-
-  if (plan.nelogicaLiveStatusCode === "2") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  return "border-[var(--app-border-soft)] bg-[var(--app-surface-soft)] text-[var(--app-text)]";
-}
-
 function getBalanceTone(value: number) {
   if (value > 0) return "text-emerald-600";
   if (value < 0) return "text-rose-600";
   return "text-[var(--app-text-subtle)]";
+}
+
+function getActionButtonTone(kind: "provision" | "cut") {
+  if (kind === "provision") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/16";
+  }
+
+  return "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/16";
 }
 
 export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
@@ -50,32 +43,49 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
     <DashboardShell company={data.company} pageTitle="Planos Ativos">
       <section className="theme-card overflow-hidden rounded-[24px]">
         <div className="border-b border-[var(--app-border-soft)] px-6 py-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex w-full flex-col gap-3 lg:max-w-xl lg:flex-row lg:items-center">
-                <SearchBar placeholder="Buscar conta, trader, plano..." />
-                <Link
-                  href="/dashboard/planos-ativos"
-                  prefetch
-                  className="inline-flex items-center justify-center rounded-[12px] border border-[var(--app-border-strong)] bg-[var(--app-surface)] px-4 py-2 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-hover)]"
-                >
-                  Limpar filtros
-                </Link>
+          <div className="space-y-5">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <h2 className="theme-title text-[1.65rem] font-semibold tracking-[-0.05em]">
+                    Planos ativos
+                  </h2>
+                  <span className="theme-pill-soft theme-text-subtle inline-flex rounded-[999px] px-3 py-1 text-[12px] font-medium">
+                    Nelogica
+                  </span>
+                </div>
+                <p className="theme-text-subtle max-w-2xl text-sm">
+                  Monitoramento operacional das contas ativas sincronizadas com a Nelogica,
+                  mantendo a mesma linguagem visual das demais listas do painel.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="theme-pill-soft theme-text-subtle inline-flex rounded-[999px] px-3 py-2 text-sm font-medium">
+                  {data.pagination.total} contas
+                </span>
+                <span className="theme-warning-box inline-flex items-center gap-2 rounded-[999px] px-3 py-2 text-sm font-medium">
+                  <TriangleAlert className="h-4 w-4" />
+                  Dados vivos + regra interna
+                </span>
+              </div>
             </div>
 
-            <div className="flex flex-col items-start gap-2 text-sm xl:items-end">
-              <span className="theme-text-subtle">
-                Exibindo {data.plans.length} de {data.pagination.total} contas
-              </span>
-              <div className="theme-warning-box inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] font-medium">
-                <TriangleAlert className="h-3.5 w-3.5" />
-                Alguns campos abaixo combinam API Nelogica + regras internas da MTCprop.
-              </div>
+            <div className="flex w-full flex-col gap-3 lg:max-w-xl lg:flex-row lg:items-center">
+              <SearchBar placeholder="Buscar conta, trader, plano..." />
+              <Link
+                href="/dashboard/planos-ativos"
+                prefetch
+                className="inline-flex items-center justify-center rounded-[12px] border border-[var(--app-border-strong)] bg-[var(--app-surface)] px-4 py-2 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-hover)]"
+              >
+                Limpar filtros
+              </Link>
             </div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-[1460px] w-full">
+          <table className="min-w-[1420px] w-full">
             <thead className="theme-table-head">
               <tr className="theme-text-subtle text-left text-[11px] font-semibold uppercase tracking-[0.18em]">
                 <th className="px-6 py-4">Conta</th>
@@ -173,8 +183,8 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
                     <td className="px-4 py-4">
                       <div className="space-y-2">
                         <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${getStatusTone(
-                            planContext,
+                          className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${getSemanticStatusBadgeClass(
+                            planContext.nelogicaLiveStatusLabel ?? planContext.nelogicaStatus,
                           )}`}
                         >
                           {planContext.nelogicaLiveStatusLabel ?? planContext.nelogicaStatus ?? "Sem status"}
@@ -202,7 +212,9 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
                               planContext.nelogicaLiveStatusCode === "3" ||
                               planContext.nelogicaStatus === "ACTIVE"
                             }
-                            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-50 ${getActionButtonTone(
+                              "provision",
+                            )}`}
                           >
                             <PlaySquare className="h-3 w-3" />
                             Provisionar
@@ -221,7 +233,9 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
                               planContext.nelogicaLiveStatusCode !== "3" &&
                               planContext.nelogicaStatus !== "ACTIVE"
                             }
-                            className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-50 ${getActionButtonTone(
+                              "cut",
+                            )}`}
                           >
                             <StopCircle className="h-3 w-3" />
                             Cortar
@@ -237,6 +251,15 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
         </div>
 
         <div className="border-t border-[var(--app-border-soft)] px-6 py-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <span className="theme-pill-soft theme-text-subtle inline-flex rounded-[999px] px-3 py-2 text-sm font-medium">
+              Exibindo {data.plans.length} de {data.pagination.total} contas
+            </span>
+            <span className="theme-text-subtle text-sm">
+              Página {data.pagination.page} de {data.pagination.totalPages}
+            </span>
+          </div>
+
           <div className="flex items-center justify-center gap-3">
             <Link
               href={
@@ -255,10 +278,6 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
               <ChevronLeft className="h-4 w-4" />
               Anterior
             </Link>
-
-            <span className="theme-text-muted min-w-[120px] text-center text-sm font-medium">
-              Página {data.pagination.page} de {data.pagination.totalPages}
-            </span>
 
             <Link
               href={

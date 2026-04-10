@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { getSemanticStatusBadgeClass } from "@/components/dashboard/status-badge";
 import type { AdminAccessItem, AdminUsersOverview } from "@/types/admin-users";
 
 type AdminUsersOverviewProps = {
@@ -100,11 +101,9 @@ function RoleBadge({ role }: { role: AdminAccessItem["role"] }) {
 function StatusBadge({ isActive }: { isActive: boolean }) {
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
-        isActive
-          ? "bg-[rgba(69,225,95,0.14)] text-[var(--brand)]"
-          : "bg-[rgba(239,68,68,0.1)] text-[#ef4444]"
-      }`}
+      className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getSemanticStatusBadgeClass(
+        isActive ? "Ativo" : "Desativado",
+      )}`}
     >
       {isActive ? "Ativo" : "Inativo"}
     </span>

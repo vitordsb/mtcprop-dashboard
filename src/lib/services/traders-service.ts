@@ -1,5 +1,6 @@
 import { getCompanySnapshot } from "@/lib/company-snapshot";
 import { CACHE_TAGS, DEFAULT_PAGINATION_LIMIT } from "@/lib/constants";
+import { hasGuruReadToken } from "@/lib/services/guru-auth";
 import { getGuruContacts } from "@/lib/services/guru-contacts-client";
 import { unstable_cache } from "next/cache";
 import type { TradersOverview } from "@/types/traders";
@@ -34,10 +35,7 @@ const getCachedTradersOverview = unstable_cache(
       company: getCompanySnapshot(),
       traders,
       defaultPageSize: DEFAULT_PAGINATION_LIMIT,
-      guruConfigured: Boolean(
-        process.env.GURU_USER_TOKEN?.trim() &&
-          !process.env.GURU_USER_TOKEN?.trim().startsWith("cole-o-"),
-      ),
+      guruConfigured: hasGuruReadToken(),
       guruContactsAdminUrl:
         process.env.GURU_CONTACTS_ADMIN_URL?.trim() ||
         "https://digitalmanager.guru/admin/contacts",

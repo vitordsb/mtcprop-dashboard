@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 
 import { getCompanySnapshot } from "@/lib/company-snapshot";
 import { CACHE_TAGS, DEFAULT_PAGINATION_LIMIT } from "@/lib/constants";
+import { hasGuruReadToken } from "@/lib/services/guru-auth";
 import { getGuruTransactionsByRange } from "@/lib/services/guru-transactions-client";
 import type { SalesOverview, SalesPeriodPreset } from "@/types/sales";
 
@@ -21,13 +22,16 @@ function formatPeriodLabel(period: SalesPeriodPreset, dateFrom: string, dateTo: 
       return "Hoje";
     case "month":
       return "Este mês";
+    case "six-months":
+      return "Últimos 6 meses";
     case "year":
       return "Este ano";
     case "custom":
       return `${new Intl.DateTimeFormat("pt-BR").format(new Date(`${dateFrom}T00:00:00`))} - ${new Intl.DateTimeFormat("pt-BR").format(new Date(`${dateTo}T00:00:00`))}`;
     case "week":
-    default:
       return "Últimos 7 dias";
+    default:
+      return "Este mês";
   }
 }
 
@@ -40,10 +44,11 @@ function resolveSalesPeriod(params?: SalesOverviewParams) {
     rawPeriod === "today" ||
     rawPeriod === "week" ||
     rawPeriod === "month" ||
+    rawPeriod === "six-months" ||
     rawPeriod === "year" ||
     rawPeriod === "custom"
       ? rawPeriod
-      : "week"
+      : "month"
   ) as SalesPeriodPreset;
 
   if (preset === "custom") {
@@ -76,6 +81,9 @@ function resolveSalesPeriod(params?: SalesOverviewParams) {
     case "month":
       start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
       break;
+    case "six-months":
+      start = new Date(now.getFullYear(), now.getMonth() - 5, 1, 0, 0, 0, 0);
+      break;
     case "year":
       start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
       break;
@@ -86,7 +94,7 @@ function resolveSalesPeriod(params?: SalesOverviewParams) {
   }
 
   return {
-    period: preset === "custom" ? "week" : preset,
+    period: preset === "custom" ? "month" : preset,
     dateFrom: toInputDate(start),
     dateTo: toInputDate(end),
     cacheKey: `${preset}:${toInputDate(start)}:${toInputDate(end)}`,
@@ -131,10 +139,7 @@ function getCachedSalesOverview(periodKey: string, dateFrom: string, dateTo: str
           paymentMethodLabel: transaction.paymentMethodLabel,
         })),
         defaultPageSize: DEFAULT_PAGINATION_LIMIT,
-        guruConfigured: Boolean(
-          process.env.GURU_USER_TOKEN?.trim() &&
-            !process.env.GURU_USER_TOKEN?.trim().startsWith("cole-o-"),
-        ),
+        guruConfigured: hasGuruReadToken(),
         period,
         dateFrom,
         dateTo,

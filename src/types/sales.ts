@@ -1,6 +1,12 @@
 import type { CompanySnapshot } from "@/types/dashboard";
 
-export type SalesPeriodPreset = "today" | "week" | "month" | "year" | "custom";
+export type SalesPeriodPreset =
+  | "today"
+  | "week"
+  | "month"
+  | "six-months"
+  | "year"
+  | "custom";
 export type SaleDetailTab = "detail" | "buyer" | "extras" | "comments" | "audit";
 
 export type SaleRecord = {
@@ -45,6 +51,7 @@ export type SaleDetailOverview = {
     paymentMethod: string | null;
     paymentMethodLabel: string | null;
     installmentsLabel: string | null;
+    installmentInterestLabel: string;
     productAmountLabel: string;
     shippingFeeLabel: string;
     discountValueLabel: string;
@@ -54,6 +61,9 @@ export type SaleDetailOverview = {
     totalLabel: string;
     netLabel: string;
     checkoutUrl: string | null;
+    invoiceActionLabel: string | null;
+    refundAvailable: boolean;
+    chargebackAvailable: boolean;
     buyer: {
       name: string;
       email: string | null;

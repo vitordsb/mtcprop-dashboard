@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 
 import { DashboardShell } from "@/components/dashboard/app-shell";
+import { getSemanticStatusBadgeClass } from "@/components/dashboard/status-badge";
 import type {
   TraderEticketRecord,
   TraderProfileOverview,
@@ -165,7 +166,11 @@ function SalesTable({ sales }: { sales: TraderSaleRecord[] }) {
                     <p className="theme-title font-medium">{sale.amountLabel}</p>
                   </td>
                   <td className="px-6 py-5">
-                    <span className="theme-pill-soft theme-text inline-flex rounded-[999px] px-3 py-1 text-xs font-medium capitalize">
+                    <span
+                      className={`inline-flex rounded-[999px] border px-3 py-1 text-xs font-medium capitalize ${getSemanticStatusBadgeClass(
+                        sale.statusLabel,
+                      )}`}
+                    >
                       {sale.statusLabel || "Nao informado"}
                     </span>
                   </td>

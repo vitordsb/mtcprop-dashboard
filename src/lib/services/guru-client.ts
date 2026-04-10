@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { z } from "zod";
+import { fetchGuruWithReadAuth, getGuruReadToken } from "@/lib/services/guru-auth";
 
 const guruSubscriptionSchema = z
   .object({
@@ -53,10 +54,6 @@ const STATUS_PRIORITY: Record<string, number> = {
   expired: 1,
 };
 
-function getGuruUserToken() {
-  return process.env.GURU_USER_TOKEN?.trim() || null;
-}
-
 function toGuruDate(unixTimestamp?: number | null) {
   if (!unixTimestamp || !Number.isFinite(unixTimestamp)) {
     return null;
@@ -83,7 +80,7 @@ function compareSubscriptions(
 }
 
 async function requestGuruSubscriptionsByEmail(email: string) {
-  const guruUserToken = getGuruUserToken();
+  const guruUserToken = getGuruReadToken();
 
   if (!guruUserToken) {
     return [];
@@ -102,11 +99,10 @@ async function requestGuruSubscriptionsByEmail(email: string) {
       searchParams.set("cursor", cursor);
     }
 
-    const response = await fetch(`${baseUrl}/subscriptions?${searchParams.toString()}`, {
+    const response = await fetchGuruWithReadAuth(`${baseUrl}/subscriptions?${searchParams.toString()}`, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${guruUserToken}`,
       },
       next: { revalidate: 60 },
     });

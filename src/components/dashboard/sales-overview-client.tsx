@@ -20,11 +20,23 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import {
+  getSemanticStatusTextClass,
+  getSemanticStatusTone,
+} from "@/components/dashboard/status-badge";
 import type { SaleRecord, SalesOverview, SalesPeriodPreset } from "@/types/sales";
 
 type SalesOverviewClientProps = {
   data: SalesOverview;
 };
+
+type SalesSortOption =
+  | "newest"
+  | "oldest"
+  | "name"
+  | "highest-value"
+  | "lowest-value"
+  | "custom-value";
 
 type FilterDraft = {
   contact: string;
@@ -33,6 +45,9 @@ type FilterDraft = {
   period: SalesPeriodPreset;
   dateFrom: string;
   dateTo: string;
+  sortBy: SalesSortOption;
+  minAmount: string;
+  maxAmount: string;
 };
 
 function normalizeText(value: string | null | undefined) {
@@ -120,21 +135,71 @@ function matchesFilters(sale: SaleRecord, filters: FilterDraft) {
     }
   }
 
+  if (filters.sortBy === "custom-value") {
+    const amount = sale.amount ?? 0;
+    const minAmount = filters.minAmount ? Number(filters.minAmount) : null;
+    const maxAmount = filters.maxAmount ? Number(filters.maxAmount) : null;
+
+    if (minAmount !== null && !Number.isNaN(minAmount) && amount < minAmount) {
+      return false;
+    }
+
+    if (maxAmount !== null && !Number.isNaN(maxAmount) && amount > maxAmount) {
+      return false;
+    }
+  }
+
   return true;
 }
 
+function sortSales(sales: SaleRecord[], sortBy: SalesSortOption) {
+  const sorted = [...sales];
+
+  switch (sortBy) {
+    case "oldest":
+      return sorted.sort((left, right) => {
+        const leftDate = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+        const rightDate = right.createdAt ? new Date(right.createdAt).getTime() : 0;
+        return leftDate - rightDate;
+      });
+    case "name":
+      return sorted.sort((left, right) =>
+        left.contactName.localeCompare(right.contactName, "pt-BR", {
+          sensitivity: "base",
+        }),
+      );
+    case "highest-value":
+      return sorted.sort((left, right) => (right.amount ?? 0) - (left.amount ?? 0));
+    case "lowest-value":
+      return sorted.sort((left, right) => (left.amount ?? 0) - (right.amount ?? 0));
+    case "custom-value":
+    case "newest":
+    default:
+      return sorted.sort((left, right) => {
+        const leftDate = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+        const rightDate = right.createdAt ? new Date(right.createdAt).getTime() : 0;
+        return rightDate - leftDate;
+      });
+  }
+}
+
 function getStatusIcon(status: string | null) {
-  const normalized = normalizeText(status);
+  const tone = getSemanticStatusTone(status);
+  const className = getSemanticStatusTextClass(status);
 
-  if (["paid", "approved", "active", "success"].includes(normalized)) {
-    return <CheckCircle2 className="h-4 w-4 text-[#319247]" />;
+  if (tone === "success") {
+    return <CheckCircle2 className={`h-4 w-4 ${className}`} />;
   }
 
-  if (["refused", "canceled", "cancelled", "chargeback"].includes(normalized)) {
-    return <XCircle className="h-4 w-4 text-[#d9534f]" />;
+  if (tone === "danger") {
+    return <XCircle className={`h-4 w-4 ${className}`} />;
   }
 
-  return <CircleDashed className="h-4 w-4 text-[#d37a16]" />;
+  if (tone === "warning") {
+    return <CircleDashed className={`h-4 w-4 ${className}`} />;
+  }
+
+  return <CircleDashed className={`h-4 w-4 ${className}`} />;
 }
 
 function getPaymentMethodIcon(method: string | null) {
@@ -228,6 +293,7 @@ function SalesFiltersModal({
                   { value: "today", label: "Hoje" },
                   { value: "week", label: "Últimos 7 dias" },
                   { value: "month", label: "Este mês" },
+                  { value: "six-months", label: "Últimos 6 meses" },
                   { value: "year", label: "Este ano" },
                   { value: "custom", label: "Personalizado" },
                 ].map((option) => {
@@ -305,6 +371,29 @@ function SalesFiltersModal({
 
             <div>
               <label className="theme-text block text-sm font-medium">
+                Ordenar por
+              </label>
+              <select
+                className="theme-input mt-2 w-full rounded-[12px] border px-4 py-3 text-sm outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+                value={draft.sortBy}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    sortBy: event.target.value as SalesSortOption,
+                  }))
+                }
+              >
+                <option value="newest">Mais recente</option>
+                <option value="oldest">Mais antigo</option>
+                <option value="name">Nome</option>
+                <option value="highest-value">Maior valor</option>
+                <option value="lowest-value">Menor valor</option>
+                <option value="custom-value">Valor personalizado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="theme-text block text-sm font-medium">
                 Data inicial
               </label>
               <input
@@ -332,6 +421,44 @@ function SalesFiltersModal({
                 }
               />
             </div>
+
+            {draft.sortBy === "custom-value" ? (
+              <>
+                <div>
+                  <label className="theme-text block text-sm font-medium">
+                    Valor mínimo
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="theme-input mt-2 w-full rounded-[12px] border px-4 py-3 text-sm outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+                    value={draft.minAmount}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, minAmount: event.target.value }))
+                    }
+                    placeholder="Ex.: 297"
+                  />
+                </div>
+
+                <div>
+                  <label className="theme-text block text-sm font-medium">
+                    Valor máximo
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="theme-input mt-2 w-full rounded-[12px] border px-4 py-3 text-sm outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+                    value={draft.maxAmount}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, maxAmount: event.target.value }))
+                    }
+                    placeholder="Ex.: 1500"
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
 
           <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[var(--app-border-soft)] pt-5 sm:flex-row sm:justify-end">
@@ -370,6 +497,9 @@ export function SalesOverviewClient({ data }: SalesOverviewClientProps) {
     period: data.period,
     dateFrom: data.dateFrom,
     dateTo: data.dateTo,
+    sortBy: "newest",
+    minAmount: "",
+    maxAmount: "",
   });
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -377,11 +507,11 @@ export function SalesOverviewClient({ data }: SalesOverviewClientProps) {
   const isSearching = searchTerm !== deferredSearch || isPending;
 
   const filteredSales = useMemo(() => {
-    return data.sales.filter(
-      (sale) =>
-        matchesSearch(sale, deferredSearch) &&
-        matchesFilters(sale, filters),
+    const filtered = data.sales.filter(
+      (sale) => matchesSearch(sale, deferredSearch) && matchesFilters(sale, filters),
     );
+
+    return sortSales(filtered, filters.sortBy);
   }, [data.sales, deferredSearch, filters]);
 
   const totalPages = Math.max(
@@ -399,9 +529,12 @@ export function SalesOverviewClient({ data }: SalesOverviewClientProps) {
     filters.contact,
     filters.product,
     filters.status,
-    filters.period !== "week" ? filters.period : "",
+    filters.period !== "month" ? filters.period : "",
     filters.period === "custom" ? filters.dateFrom : "",
     filters.period === "custom" ? filters.dateTo : "",
+    filters.sortBy !== "newest" ? filters.sortBy : "",
+    filters.sortBy === "custom-value" ? filters.minAmount : "",
+    filters.sortBy === "custom-value" ? filters.maxAmount : "",
   ].filter(Boolean).length;
 
   function syncPeriodOnUrl(nextFilters: FilterDraft) {
@@ -457,16 +590,19 @@ export function SalesOverviewClient({ data }: SalesOverviewClientProps) {
       contact: "",
       product: "",
       status: "",
-      period: "week",
+      period: "month",
       dateFrom: data.dateFrom,
       dateTo: data.dateTo,
+      sortBy: "newest",
+      minAmount: "",
+      maxAmount: "",
     };
 
     setFilters(clearedFilters);
     setCurrentPage(1);
     setIsFilterModalOpen(false);
     startTransition(() => {
-      router.replace(`${pathname}?period=week`, { scroll: false });
+      router.replace(`${pathname}?period=month`, { scroll: false });
     });
   }
 

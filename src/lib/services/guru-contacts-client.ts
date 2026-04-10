@@ -2,6 +2,7 @@ import { cache } from "react";
 import { z } from "zod";
 
 import { CACHE_TAGS } from "@/lib/constants";
+import { fetchGuruWithReadAuth, getGuruReadToken } from "@/lib/services/guru-auth";
 
 const stringishValueSchema = z
   .union([z.string(), z.number(), z.boolean()])
@@ -85,16 +86,6 @@ export type CreateGuruContactInput = {
   zipcode?: string;
 };
 
-function getGuruUserToken() {
-  const token = process.env.GURU_USER_TOKEN?.trim() || null;
-
-  if (!token || token.startsWith("cole-o-")) {
-    return null;
-  }
-
-  return token;
-}
-
 function normalizePhone(contact: z.infer<typeof guruContactSchema>) {
   if (contact.cellphone) {
     return contact.cellphone;
@@ -148,7 +139,7 @@ function toGuruContactSnapshot(contact: z.infer<typeof guruContactSchema>): Guru
 }
 
 async function requestAllGuruContacts() {
-  const guruUserToken = getGuruUserToken();
+  const guruUserToken = getGuruReadToken();
 
   if (!guruUserToken) {
     return [] as GuruContactSnapshot[];
@@ -165,11 +156,10 @@ async function requestAllGuruContacts() {
       searchParams.set("cursor", cursor);
     }
 
-    const response = await fetch(`${baseUrl}/contacts?${searchParams.toString()}`, {
+    const response = await fetchGuruWithReadAuth(`${baseUrl}/contacts?${searchParams.toString()}`, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${guruUserToken}`,
       },
       next: { revalidate: 60, tags: [CACHE_TAGS.TRADERS_OVERVIEW] },
     });
@@ -192,18 +182,17 @@ async function requestAllGuruContacts() {
 }
 
 async function requestGuruContactById(contactId: string) {
-  const guruUserToken = getGuruUserToken();
+  const guruUserToken = getGuruReadToken();
 
   if (!guruUserToken) {
     return null;
   }
 
   const baseUrl = process.env.GURU_API_BASE_URL || "https://digitalmanager.guru/api/v2";
-  const response = await fetch(`${baseUrl}/contacts/${contactId}`, {
+  const response = await fetchGuruWithReadAuth(`${baseUrl}/contacts/${contactId}`, {
     method: "GET",
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${guruUserToken}`,
     },
     next: { revalidate: 60, tags: [CACHE_TAGS.TRADERS_OVERVIEW] },
   });
@@ -248,10 +237,10 @@ function splitCellphone(country: string, cellphone: string) {
 }
 
 export async function createGuruContact(input: CreateGuruContactInput) {
-  const guruUserToken = getGuruUserToken();
+  const guruUserToken = getGuruReadToken();
 
   if (!guruUserToken) {
-    throw new Error("GURU_USER_TOKEN não configurado.");
+    throw new Error("Nenhum token de leitura/escrita da Guru configurado.");
   }
 
   const baseUrl = process.env.GURU_API_BASE_URL || "https://digitalmanager.guru/api/v2";
@@ -288,12 +277,11 @@ export async function createGuruContact(input: CreateGuruContactInput) {
     address_zipcode: input.zipcode || undefined,
   };
 
-  const response = await fetch(`${baseUrl}/contacts`, {
+  const response = await fetchGuruWithReadAuth(`${baseUrl}/contacts`, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      Authorization: `Bearer ${guruUserToken}`,
     },
     body: JSON.stringify(payload),
     cache: "no-store",

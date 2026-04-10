@@ -1,4 +1,7 @@
+import { unstable_cache } from "next/cache";
+
 import { getCompanySnapshot } from "@/lib/company-snapshot";
+import { CACHE_TAGS } from "@/lib/constants";
 import { getGuruContactById } from "@/lib/services/guru-contacts-client";
 import {
   getAllGuruTransactions,
@@ -75,72 +78,89 @@ function filterTraderSales(
 
 export const traderProfileService = {
   async getOverview(contactId: string): Promise<TraderProfileOverview | null> {
-    const trader = await getGuruContactById(contactId);
+    const normalizedContactId = contactId.trim();
 
-    if (!trader) {
+    if (!normalizedContactId) {
       return null;
     }
 
-    const [directSalesSnapshots, allSalesSnapshots] = await Promise.all([
-      trader.id
-        ? getGuruTransactionsByContactId(trader.id).catch((error) => {
-            console.warn("[guru-transactions] falha ao consultar vendas por contact_id", error);
-            return [];
-          })
-        : Promise.resolve([]),
-      getAllGuruTransactions().catch((error) => {
-        console.warn("[guru-transactions] falha ao consultar snapshot geral de vendas", error);
-        return [];
-      }),
-    ]);
+    return unstable_cache(
+      async (): Promise<TraderProfileOverview | null> => {
+        const trader = await getGuruContactById(normalizedContactId);
 
-    const mergedSalesSnapshots = Array.from(
-      new Map(
-        [...directSalesSnapshots, ...filterTraderSales(allSalesSnapshots, trader)].map((sale) => [
-          sale.code || sale.id,
-          sale,
-        ]),
-      ).values(),
-    ).sort((left, right) => {
-      const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : 0;
-      const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : 0;
-      return rightTime - leftTime;
-    });
+        if (!trader) {
+          return null;
+        }
 
-    const sales: TraderSaleRecord[] = mergedSalesSnapshots.map((sale) => ({
-      id: sale.id,
-      code: sale.code,
-      productName: sale.productName,
-      createdAt: formatDisplayDate(sale.createdAt),
-      amountLabel: sale.amountLabel,
-      statusLabel: sale.statusLabel,
-    }));
+        const directSalesSnapshots = trader.id
+          ? await getGuruTransactionsByContactId(trader.id).catch((error) => {
+              console.warn("[guru-transactions] falha ao consultar vendas por contact_id", error);
+              return [];
+            })
+          : [];
 
-    const etickets: TraderEticketRecord[] = [];
+        const fallbackSalesSnapshots =
+          directSalesSnapshots.length === 0
+            ? await getAllGuruTransactions().catch((error) => {
+                console.warn("[guru-transactions] falha ao consultar snapshot geral de vendas", error);
+                return [];
+              })
+            : [];
 
-    return {
-      company: getCompanySnapshot(),
-      trader: {
-        id: trader.id,
-        name: trader.name,
-        email: trader.email || "Sem e-mail",
-        phone: trader.phone || "Sem telefone",
-        document: trader.document || "Sem documento",
-        street: trader.street,
-        number: trader.number,
-        complement: trader.complement,
-        district: trader.district,
-        zipcode: trader.zipcode,
-        city: trader.city,
-        state: trader.state,
-        country: trader.country,
-        regionLabel: trader.regionLabel,
-        createdAt: trader.createdAt,
+        const mergedSalesSnapshots = Array.from(
+          new Map(
+            [
+              ...directSalesSnapshots,
+              ...filterTraderSales(fallbackSalesSnapshots, trader),
+            ].map((sale) => [sale.code || sale.id, sale]),
+          ).values(),
+        ).sort((left, right) => {
+          const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+          const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : 0;
+          return rightTime - leftTime;
+        });
+
+        const sales: TraderSaleRecord[] = mergedSalesSnapshots.map((sale) => ({
+          id: sale.id,
+          code: sale.code,
+          productName: sale.productName,
+          createdAt: formatDisplayDate(sale.createdAt),
+          amountLabel: sale.amountLabel,
+          statusLabel: sale.statusLabel,
+        }));
+
+        const etickets: TraderEticketRecord[] = [];
+
+        return {
+          company: getCompanySnapshot(),
+          trader: {
+            id: trader.id,
+            name: trader.name,
+            email: trader.email || "Sem e-mail",
+            phone: trader.phone || "Sem telefone",
+            document: trader.document || "Sem documento",
+            street: trader.street,
+            number: trader.number,
+            complement: trader.complement,
+            district: trader.district,
+            zipcode: trader.zipcode,
+            city: trader.city,
+            state: trader.state,
+            country: trader.country,
+            regionLabel: trader.regionLabel,
+            createdAt: trader.createdAt,
+          },
+          sales,
+          etickets,
+          commentsCount: 0,
+          auditCount: 0,
+        };
       },
-      sales,
-      etickets,
-      commentsCount: 0,
-      auditCount: 0,
-    };
+      [CACHE_TAGS.TRADER_PROFILE, normalizedContactId],
+      {
+        revalidate: 60,
+        tags: [CACHE_TAGS.TRADER_PROFILE, CACHE_TAGS.TRADERS_OVERVIEW, CACHE_TAGS.SALES_OVERVIEW],
+      },
+    )();
   },
 };

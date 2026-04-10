@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { CACHE_TAGS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { fetchGuruWithReadAuth, getGuruReadToken } from "@/lib/services/guru-auth";
 import type { SalesPeriodPreset } from "@/types/sales";
 
 const stringishValueSchema = z
@@ -287,12 +288,21 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   pix: "Pix",
 };
 
+function toHumanLabel(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\b\p{L}/gu, (character) => character.toUpperCase());
+}
+
 function getTransactionStatusLabel(value: string | null | undefined) {
   if (!value) {
     return null;
   }
 
-  return TRANSACTION_STATUS_LABELS[value] ?? value.replaceAll("_", " ");
+  const normalized = value.trim().toLowerCase();
+  return TRANSACTION_STATUS_LABELS[normalized] ?? toHumanLabel(normalized);
 }
 
 function getPaymentMethodLabel(value: string | null | undefined) {
@@ -300,17 +310,8 @@ function getPaymentMethodLabel(value: string | null | undefined) {
     return null;
   }
 
-  return PAYMENT_METHOD_LABELS[value] ?? value.replaceAll("_", " ");
-}
-
-function getGuruUserToken() {
-  const token = process.env.GURU_USER_TOKEN?.trim() || null;
-
-  if (!token || token.startsWith("cole-o-")) {
-    return null;
-  }
-
-  return token;
+  const normalized = value.trim().toLowerCase();
+  return PAYMENT_METHOD_LABELS[normalized] ?? toHumanLabel(normalized);
 }
 
 function parseGuruTimestamp(value: string | number | null | undefined) {
@@ -660,7 +661,7 @@ async function getPersistedGuruTransactions(range?: GuruTransactionRange) {
 }
 
 async function requestGuruTransactionsByContactRoute(contactId: string) {
-  const guruUserToken = getGuruUserToken();
+  const guruUserToken = getGuruReadToken();
 
   if (!guruUserToken) {
     return [] as GuruTransactionSnapshot[];
@@ -687,11 +688,10 @@ async function requestGuruTransactionsByContactRoute(contactId: string) {
       ? `${baseUrl}/contacts/${encodeURIComponent(normalizedContactId)}/transactions?${searchParams.toString()}`
       : `${baseUrl}/contacts/${encodeURIComponent(normalizedContactId)}/transactions`;
 
-    const response = await fetch(requestUrl, {
+    const response = await fetchGuruWithReadAuth(requestUrl, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${guruUserToken}`,
       },
       next: {
         revalidate: 60,
@@ -720,7 +720,7 @@ async function requestGuruTransactionsByContactRoute(contactId: string) {
 }
 
 async function requestGuruTransactionsByContactFilter(contactId: string) {
-  const guruUserToken = getGuruUserToken();
+  const guruUserToken = getGuruReadToken();
 
   if (!guruUserToken) {
     return [] as GuruTransactionSnapshot[];
@@ -744,11 +744,10 @@ async function requestGuruTransactionsByContactFilter(contactId: string) {
       searchParams.set("cursor", cursor);
     }
 
-    const response = await fetch(`${baseUrl}/transactions?${searchParams.toString()}`, {
+    const response = await fetchGuruWithReadAuth(`${baseUrl}/transactions?${searchParams.toString()}`, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${guruUserToken}`,
       },
       next: {
         revalidate: 60,
@@ -777,18 +776,17 @@ async function requestGuruTransactionsByContactFilter(contactId: string) {
 }
 
 async function requestGuruTransactionById(transactionId: string) {
-  const guruUserToken = getGuruUserToken();
+  const guruUserToken = getGuruReadToken();
 
   if (!guruUserToken || !transactionId.trim()) {
     return null;
   }
 
   const baseUrl = process.env.GURU_API_BASE_URL || "https://digitalmanager.guru/api/v2";
-  const response = await fetch(`${baseUrl}/transactions/${transactionId}`, {
+  const response = await fetchGuruWithReadAuth(`${baseUrl}/transactions/${transactionId}`, {
     method: "GET",
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${guruUserToken}`,
     },
     next: {
       revalidate: 60,
@@ -813,7 +811,7 @@ async function requestGuruTransactionsByWindow(
   startDate: Date,
   endDate: Date,
 ) {
-  const guruUserToken = getGuruUserToken();
+  const guruUserToken = getGuruReadToken();
 
   if (!guruUserToken) {
     return [] as GuruTransactionSnapshot[];
@@ -841,11 +839,10 @@ async function requestGuruTransactionsByWindow(
       searchParams.set("cursor", cursor);
     }
 
-    const response = await fetch(`${baseUrl}/transactions?${searchParams.toString()}`, {
+    const response = await fetchGuruWithReadAuth(`${baseUrl}/transactions?${searchParams.toString()}`, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${guruUserToken}`,
       },
       next: {
         revalidate: 60,
@@ -1096,6 +1093,10 @@ export function resolveSalesPeriodRange(period: SalesPeriodPreset, now = new Dat
     }
     case "month": {
       const start = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+      return { start, end };
+    }
+    case "six-months": {
+      const start = startOfDay(new Date(now.getFullYear(), now.getMonth() - 5, 1));
       return { start, end };
     }
     case "year": {
