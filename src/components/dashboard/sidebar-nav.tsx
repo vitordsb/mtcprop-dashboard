@@ -26,11 +26,6 @@ const navItems = [
     href: "/dashboard/vendas",
   },
   {
-    icon: KeyRound,
-    label: "Acessos",
-    href: "/dashboard/acessos",
-  },
-  {
     icon: Layers,
     label: "Planos ativos",
     href: "/dashboard/planos-ativos",
@@ -54,6 +49,11 @@ const navItems = [
     icon: BarChart3,
     label: "Estatísticas",
     href: "/dashboard/estatisticas",
+  },
+  {
+    icon: KeyRound,
+    label: "Acessos",
+    href: "/dashboard/acessos",
   },
 ];
 

@@ -10,8 +10,6 @@ const VALID_TABS = new Set<TraderProfileTab>([
   "detail",
   "sales",
   "etickets",
-  "comments",
-  "audit",
 ]);
 
 function resolveTab(value: string | undefined): TraderProfileTab {

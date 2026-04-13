@@ -38,6 +38,29 @@ export const dashboardOverviewMock: DashboardOverview = {
       tone: "warning",
     },
   ],
+  guruMetrics: [
+    {
+      label: "Traders sincronizados",
+      value: "1.004",
+      trend: "Base de contatos da Guru",
+      hint: "Contatos sincronizados via API de Contacts.",
+      tone: "brand",
+    },
+    {
+      label: "Vendas aprovadas",
+      value: "318",
+      trend: "Transacoes confirmadas",
+      hint: "Vendas concluídas mapeadas a partir dos status da Guru.",
+      tone: "neutral",
+    },
+    {
+      label: "Transações totais",
+      value: "1.738",
+      trend: "Historico agregado",
+      hint: "Contagem geral de transactions retornadas pela Guru.",
+      tone: "warning",
+    },
+  ],
   students: [
     {
       id: "std-001",
@@ -229,4 +252,3 @@ export const dashboardOverviewMock: DashboardOverview = {
     },
   ],
 };
-

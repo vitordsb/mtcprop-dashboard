@@ -4,10 +4,12 @@ import {
   Ban,
   CircleDashed,
   CreditCard,
+  ExternalLink,
+  Mail,
   Landmark,
+  MessageCircle,
   RefreshCcw,
   Receipt,
-  MessageSquareText,
   QrCode,
   ReceiptText,
   WalletCards,
@@ -32,9 +34,6 @@ type SaleDetailViewProps = {
 const TAB_ITEMS: Array<{ key: SaleDetailTab; label: string }> = [
   { key: "detail", label: "Detalhe" },
   { key: "buyer", label: "Comprador" },
-  { key: "extras", label: "Extras" },
-  { key: "comments", label: "Comentários" },
-  { key: "audit", label: "Auditoria" },
 ];
 
 function buildSaleTabHref(saleId: string, tab: SaleDetailTab) {
@@ -72,24 +71,6 @@ function SectionTitle({
   );
 }
 
-function EmptyPanel({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <section className="theme-card rounded-[24px] p-6">
-      <div className="theme-accent-icon flex h-12 w-12 items-center justify-center rounded-[14px]">
-        <MessageSquareText className="h-5 w-5" />
-      </div>
-      <h3 className="theme-title mt-4 text-xl font-semibold tracking-[-0.04em]">{title}</h3>
-      <p className="theme-text-muted mt-2 max-w-2xl text-sm leading-6">{description}</p>
-    </section>
-  );
-}
-
 function getPaymentIcon(method: string | null) {
   switch (method) {
     case "credit_card":
@@ -103,6 +84,26 @@ function getPaymentIcon(method: string | null) {
     default:
       return <WalletCards className="h-4 w-4" />;
   }
+}
+
+function extractPhoneDigits(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const digits = value.replace(/\D/g, "");
+  return digits || null;
+}
+
+function buildWhatsAppHref(value: string | null | undefined) {
+  const digits = extractPhoneDigits(value);
+
+  if (!digits) {
+    return null;
+  }
+
+  const normalized = digits.length === 11 || digits.length === 10 ? `55${digits}` : digits;
+  return `https://wa.me/${normalized}`;
 }
 
 function StatusPill({
@@ -124,6 +125,33 @@ function StatusPill({
       <Icon className="h-4 w-4" />
       {label || "Não informado"}
     </span>
+  );
+}
+
+function IconActionLink({
+  href,
+  label,
+  icon,
+}: {
+  href: string | null;
+  label: string;
+  icon: ReactNode;
+}) {
+  if (!href) {
+    return null;
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={label}
+      title={label}
+      className="theme-icon-button flex h-10 w-10 items-center justify-center rounded-[12px] transition"
+    >
+      {icon}
+    </a>
   );
 }
 
@@ -276,11 +304,30 @@ export function SaleDetailView({ data, activeTab }: SaleDetailViewProps) {
         {activeTab === "buyer" ? (
           <div className="space-y-6">
             <section className="theme-card rounded-[24px] p-6">
-              <div className="mb-6">
-                <div className="mb-3 h-[2px] w-10 rounded-full bg-[var(--brand)]" />
-                <h3 className="theme-title text-[30px] font-semibold tracking-[-0.05em]">
-                  Comprador
-                </h3>
+              <SectionTitle
+                title="Comprador"
+                action={
+                  <button
+                    type="button"
+                    className="theme-text-subtle inline-flex items-center gap-2 rounded-[12px] border border-[var(--app-border-soft)] bg-[var(--app-surface)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--app-hover)]"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Editar comprador
+                  </button>
+                }
+              />
+
+              <div className="mb-6 flex flex-wrap items-center gap-2">
+                <IconActionLink
+                  href={sale.buyer.email ? `mailto:${sale.buyer.email}` : null}
+                  label="Enviar email"
+                  icon={<Mail className="h-4 w-4" />}
+                />
+                <IconActionLink
+                  href={buildWhatsAppHref(sale.buyer.phone)}
+                  label="Abrir WhatsApp"
+                  icon={<MessageCircle className="h-4 w-4" />}
+                />
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
@@ -310,53 +357,22 @@ export function SaleDetailView({ data, activeTab }: SaleDetailViewProps) {
                 <DetailField label="CEP" value={sale.buyer.zipcode} />
               </div>
             </section>
+
+            <section className="theme-card rounded-[24px] p-6">
+              <SectionTitle title="Infraestrutura" />
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <DetailField label="País" value={sale.extras.country} />
+                <DetailField label="Região" value={sale.extras.region} />
+                <DetailField label="Cidade" value={sale.extras.city} />
+                <DetailField label="Latitude & Longitude" value={sale.extras.latitudeLongitude} />
+                <DetailField label="IP" value={sale.extras.ip} />
+                <DetailField label="User Agent" value={sale.extras.userAgent} />
+              </div>
+            </section>
           </div>
         ) : null}
 
-        {activeTab === "extras" ? (
-          <section className="theme-card rounded-[24px] p-6">
-            <div className="mb-6">
-              <div className="mb-3 h-[2px] w-10 rounded-full bg-[var(--brand)]" />
-              <h3 className="theme-title text-[30px] font-semibold tracking-[-0.05em]">
-                Extras
-              </h3>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <DetailField label="Source" value={sale.extras.source} />
-              <DetailField label="Checkout source" value={sale.extras.checkoutSource} />
-              <DetailField label="UTM source" value={sale.extras.utmSource} />
-              <DetailField label="UTM campaign" value={sale.extras.utmCampaign} />
-              <DetailField label="UTM medium" value={sale.extras.utmMedium} />
-              <DetailField label="UTM content" value={sale.extras.utmContent} />
-              <DetailField label="UTM term" value={sale.extras.utmTerm} />
-              <DetailField label="IP" value={sale.extras.ip} />
-              <DetailField label="País" value={sale.extras.country} />
-              <DetailField label="Região" value={sale.extras.region} />
-              <DetailField label="Cidade" value={sale.extras.city} />
-              <DetailField label="Latitude & Longitude" value={sale.extras.latitudeLongitude} />
-              <DetailField label="Termos aceitos" value={sale.extras.acceptedTerms} />
-              <DetailField label="Política de privacidade" value={sale.extras.acceptedPrivacyPolicy} />
-              <div className="md:col-span-2">
-                <DetailField label="User Agent" value={sale.extras.userAgent} />
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        {activeTab === "comments" ? (
-          <EmptyPanel
-            title="Comentários"
-            description="A base da visualização já está pronta. Assim que o fluxo operacional for definido, vamos ligar comentários administrativos por venda."
-          />
-        ) : null}
-
-        {activeTab === "audit" ? (
-          <EmptyPanel
-            title="Auditoria"
-            description="A estrutura de auditoria da venda fica reservada para a próxima etapa. Aqui vamos mostrar alterações, tentativas de reenvio e eventos administrativos."
-          />
-        ) : null}
       </div>
     </DashboardShell>
   );

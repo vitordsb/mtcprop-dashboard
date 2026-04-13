@@ -22,35 +22,23 @@ export function DashboardShellLoading({
     <div className="theme-page h-screen overflow-hidden">
       <div className="grid h-screen lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="theme-shell-surface flex h-screen flex-col overflow-hidden border-b lg:border-b-0 lg:border-r">
-          <div className="border-b border-[var(--app-border-soft)] px-6 py-7">
-            <MtcpropMark align="left" size="compact" />
+          <div className="border-b border-[var(--app-border-soft)] px-6 py-5">
+            <MtcpropMark align="left" size="compact" variant="symbol" />
           </div>
 
           <SidebarNav />
 
           <div className="hidden shrink-0 border-t border-[var(--app-border-soft)] px-6 py-5 lg:block">
-            <div
-              className="relative overflow-hidden rounded-[20px] border border-[rgba(69,225,95,0.14)] bg-[#071108] p-4 text-white"
-              style={{
-                backgroundImage:
-                  "linear-gradient(180deg,rgba(4,10,5,0.2),rgba(4,10,5,0.86)), url('/brand/mtcprop-control-room.jpg')",
-                backgroundPosition: "center",
-                backgroundSize: "cover",
-              }}
-            >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(69,225,95,0.16),transparent_48%)]" />
-              <div className="relative">
-                <MtcpropMark theme="dark" align="left" size="compact" />
-                <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-[rgba(235,255,238,0.74)]">
-                  Ambiente atual
-                </p>
-                <div className="mt-3 space-y-2 text-sm text-[rgba(244,255,245,0.84)]">
-                  <p>{company.environment}</p>
-                  <p>{company.deploymentTarget}</p>
-                  <span className="inline-flex items-center gap-2 font-medium text-[#79ef8d]">
-                    Site principal
-                  </span>
-                </div>
+            <div className="theme-card rounded-lg border border-[var(--app-border-soft)] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--app-muted)]">
+                Ambiente atual
+              </p>
+              <div className="mt-3 space-y-2 text-sm text-[var(--app-foreground)]">
+                <p>{company.environment}</p>
+                <p className="text-[var(--app-muted)]">{company.deploymentTarget}</p>
+                <span className="inline-flex items-center gap-2 font-medium text-[var(--brand)]">
+                  Site principal
+                </span>
               </div>
             </div>
           </div>

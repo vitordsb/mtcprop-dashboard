@@ -139,6 +139,7 @@ export const saleDetailService = {
                 address_district?: string | null;
                 address_city?: string | null;
                 address_state?: string | null;
+                address_state_full_name?: string | null;
                 address_country?: string | null;
                 address_zip_code?: string | null;
               } | null;
@@ -287,7 +288,7 @@ export const saleDetailService = {
               complement: raw?.contact?.address_comp ?? null,
               district: raw?.contact?.address_district ?? null,
               city: raw?.contact?.address_city ?? null,
-              state: raw?.contact?.address_state ?? null,
+              state: raw?.contact?.address_state_full_name ?? raw?.contact?.address_state ?? null,
               zipcode: raw?.contact?.address_zip_code ?? null,
             },
             product: {

@@ -8,6 +8,8 @@ import { unstable_cache } from "next/cache";
 import { getCompanySnapshot } from "@/lib/company-snapshot";
 import { CACHE_TAGS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { getGuruContacts } from "@/lib/services/guru-contacts-client";
+import { getAllGuruTransactions } from "@/lib/services/guru-transactions-client";
 import type {
   AccessModule,
   ActivityItem,
@@ -56,6 +58,22 @@ const planHighlightMap: Record<string, string> = {
   "plano-avancado-fast-pro": "Faixa premium dos planos fast.",
 };
 
+const successfulGuruTransactionStatuses = new Set(["approved", "completed"]);
+const pendingGuruTransactionStatuses = new Set([
+  "waiting_payment",
+  "in_analysis",
+  "billet_printed",
+]);
+const finalGuruTransactionStatuses = new Set([
+  "approved",
+  "completed",
+  "canceled",
+  "chargeback",
+  "refunded",
+  "abandoned",
+  "expired",
+]);
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -86,6 +104,22 @@ function formatRelativeDate(date: Date) {
 
 function prettifyModuleKey(moduleKey: string) {
   return moduleLabelMap[moduleKey] ?? moduleKey.replace(/-/g, " ");
+}
+
+function normalizeGuruStatus(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function isSuccessfulGuruTransaction(statusCode: string | null | undefined) {
+  return successfulGuruTransactionStatuses.has(normalizeGuruStatus(statusCode));
+}
+
+function isPendingGuruTransaction(statusCode: string | null | undefined) {
+  return pendingGuruTransactionStatuses.has(normalizeGuruStatus(statusCode));
+}
+
+function isFinalGuruTransaction(statusCode: string | null | undefined) {
+  return finalGuruTransactionStatuses.has(normalizeGuruStatus(statusCode));
 }
 
 function buildPendingActions(params: {
@@ -187,6 +221,8 @@ const getCachedDashboardOverview = unstable_cache(
       productEnrollmentCounts,
       products,
       recentStudents,
+      guruContacts,
+      guruTransactions,
     ] = await Promise.all([
       // 1. Raw query para todas as contagens base (apenas 1 ida ao BD em vez de 5)
       prisma.$queryRaw<
@@ -263,6 +299,14 @@ const getCachedDashboardOverview = unstable_cache(
           },
         },
       }),
+      getGuruContacts().catch((error) => {
+        console.warn("[dashboard-overview] falha ao consultar contatos da Guru", error);
+        return [];
+      }),
+      getAllGuruTransactions().catch((error) => {
+        console.warn("[dashboard-overview] falha ao consultar transactions da Guru", error);
+        return [];
+      }),
     ]);
 
     const activeStudents = Number(baseStatsResult?.activeStudents ?? 0);
@@ -289,6 +333,17 @@ const getCachedDashboardOverview = unstable_cache(
         (productEnrollmentCountMap.get(product.id) ?? 0) * Number(product.price),
       0,
     );
+
+    const guruTradersCount = new Set(guruContacts.map((contact) => contact.id)).size;
+    const guruCompletedSalesCount = guruTransactions.filter((transaction) =>
+      isSuccessfulGuruTransaction(transaction.statusCode),
+    ).length;
+    const guruPendingTransactionsCount = guruTransactions.filter((transaction) =>
+      isPendingGuruTransaction(transaction.statusCode),
+    ).length;
+    const guruFinalTransactionsCount = guruTransactions.filter((transaction) =>
+      isFinalGuruTransaction(transaction.statusCode),
+    ).length;
 
     const students = recentStudents.map((student) => {
       const activeEnrollment = student.enrollments[0];
@@ -363,6 +418,29 @@ const getCachedDashboardOverview = unstable_cache(
           value: formatCurrency(estimatedRevenue),
           trend: `${products.length} produtos ativos`,
           hint: "Projecao baseada nas inscricoes ativas e precos cadastrados.",
+          tone: "warning",
+        },
+      ],
+      guruMetrics: [
+        {
+          label: "Traders sincronizados",
+          value: String(guruTradersCount),
+          trend: "Base viva da Guru",
+          hint: "Contatos lidos diretamente da API de Contacts.",
+          tone: "brand",
+        },
+        {
+          label: "Vendas concluidas",
+          value: String(guruCompletedSalesCount),
+          trend: `${guruPendingTransactionsCount} pendentes`,
+          hint: "Contagem de transacoes aprovadas ou completadas na Guru.",
+          tone: "neutral",
+        },
+        {
+          label: "Transacoes totais",
+          value: String(guruTransactions.length),
+          trend: `${guruFinalTransactionsCount} com status final`,
+          hint: "Historico consolidado de transactions retornadas pela Guru.",
           tone: "warning",
         },
       ],

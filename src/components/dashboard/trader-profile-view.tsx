@@ -1,8 +1,6 @@
 import {
   ArrowLeft,
   FileSpreadsheet,
-  MessageSquareText,
-  ShieldCheck,
   Ticket,
   WalletCards,
 } from "lucide-react";
@@ -26,8 +24,6 @@ const TAB_ITEMS: Array<{ key: TraderProfileTab; label: string }> = [
   { key: "detail", label: "Detalhe" },
   { key: "sales", label: "Vendas" },
   { key: "etickets", label: "E-Tickets" },
-  { key: "comments", label: "Comentarios" },
-  { key: "audit", label: "Auditoria" },
 ];
 
 function buildTraderTabHref(traderId: string, tab: TraderProfileTab) {
@@ -72,41 +68,6 @@ function StatBadge({
         <p className="theme-title mt-1 text-base font-semibold">{value}</p>
       </div>
     </div>
-  );
-}
-
-function EmptyPanel({
-  icon: Icon,
-  title,
-  description,
-  action,
-}: {
-  icon: typeof MessageSquareText;
-  title: string;
-  description: string;
-  action?: string;
-}) {
-  return (
-    <section className="theme-card rounded-[24px] p-6">
-      <div className="flex flex-col items-start gap-4">
-        <div className="theme-accent-icon flex h-12 w-12 items-center justify-center rounded-[14px]">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <h3 className="theme-title text-xl font-semibold tracking-[-0.04em]">
-            {title}
-          </h3>
-          <p className="theme-text-muted mt-2 max-w-2xl text-sm leading-6">
-            {description}
-          </p>
-        </div>
-        {action ? (
-          <span className="theme-pill-soft theme-text-subtle inline-flex rounded-[12px] px-3 py-2 text-xs font-medium">
-            {action}
-          </span>
-        ) : null}
-      </div>
-    </section>
   );
 }
 
@@ -365,24 +326,6 @@ export function TraderProfileView({
         {activeTab === "sales" ? <SalesTable sales={data.sales} /> : null}
 
         {activeTab === "etickets" ? <EticketsTable etickets={data.etickets} /> : null}
-
-        {activeTab === "comments" ? (
-          <EmptyPanel
-            icon={MessageSquareText}
-            title="Comentarios"
-            description="A estrutura da aba de comentarios ja esta pronta, mas a origem e o fluxo de cadastro ainda nao foram definidos. Assim que essa regra operacional for fechada, esta tela recebe historico e composicao dos registros."
-            action="Em definicao"
-          />
-        ) : null}
-
-        {activeTab === "audit" ? (
-          <EmptyPanel
-            icon={ShieldCheck}
-            title="Auditoria"
-            description="A base visual ja foi criada para a auditoria individual do trader. O proximo passo sera ligar eventos operacionais reais, como alteracoes de cadastro, provisionamento e interacoes administrativas."
-            action="Estrutura pronta para evolucao"
-          />
-        ) : null}
       </div>
     </DashboardShell>
   );

@@ -7,7 +7,7 @@ export type SalesPeriodPreset =
   | "six-months"
   | "year"
   | "custom";
-export type SaleDetailTab = "detail" | "buyer" | "extras" | "comments" | "audit";
+export type SaleDetailTab = "detail" | "buyer";
 
 export type SaleRecord = {
   id: string;

@@ -9,9 +9,6 @@ export const dynamic = "force-dynamic";
 const VALID_TABS = new Set<SaleDetailTab>([
   "detail",
   "buyer",
-  "extras",
-  "comments",
-  "audit",
 ]);
 
 function resolveTab(value: string | undefined): SaleDetailTab {

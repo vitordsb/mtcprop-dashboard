@@ -75,6 +75,7 @@ export type ActivityItem = {
 export type DashboardOverview = {
   company: CompanySnapshot;
   kpis: DashboardKpi[];
+  guruMetrics: DashboardKpi[];
   students: StudentRecord[];
   enrollments: EnrollmentSummary[];
   plans: PlanSnapshot[];
@@ -82,4 +83,3 @@ export type DashboardOverview = {
   pendingActions: PendingAction[];
   activityTimeline: ActivityItem[];
 };
-

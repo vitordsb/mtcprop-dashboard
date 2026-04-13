@@ -11,7 +11,7 @@ import { DashboardShell } from "@/components/dashboard/app-shell";
 import { getSemanticStatusBadgeClass } from "@/components/dashboard/status-badge";
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { actionCancelarLicenca, actionProvisionarLicenca } from "@/app/actions/nelogica-actions";
-import type { ActivePlanListItem, ActivePlansOverview } from "@/lib/services/plans-service";
+import type { ActivePlansOverview } from "@/lib/services/plans-service";
 
 type ActivePlansOverviewProps = {
   data: ActivePlansOverview;

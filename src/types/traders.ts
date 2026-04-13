@@ -29,9 +29,7 @@ export type TradersOverview = {
 export type TraderProfileTab =
   | "detail"
   | "sales"
-  | "etickets"
-  | "comments"
-  | "audit";
+  | "etickets";
 
 export type TraderSaleRecord = {
   id: string;
