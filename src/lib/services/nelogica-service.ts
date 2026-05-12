@@ -5,18 +5,104 @@ import {
   NelogicaClientStatusResponse,
   NelogicaFinancialResultItem,
   NelogicaPrefixBatchItem,
-  NelogicaSignedPointResponse,
   NelogicaSuitabilityProfile,
+  PropTradingCancelParams,
+  PropTradingCreateParams,
+  PropTradingModernResponse,
+  PropTradingSubscription,
 } from "./nelogica-types";
 
 /**
  * Serviço responsável pelas abstrações de domínio em relação à API Nelogica.
  * Contém casos de uso específicos que a MTCprop precisa para operar.
+ *
+ * A MTCprop utiliza o modelo de Mesa Proprietária (prop_trading_*):
+ * - Uma conta master pertence à mesa
+ * - Cada trader tem uma subconta (subAccount) vinculada à conta master
  */
 export const nelogicaService = {
+  // ─────────────────────────────────────────────────────────────
+  // API Mesa Proprietária — endpoints prop_trading_*
+  // ─────────────────────────────────────────────────────────────
+
+  /**
+   * Lista as subcontas de traders da mesa proprietária.
+   *
+   * Principal endpoint para popular a dashboard de Planos Ativos.
+   * Uma única chamada retorna todos os traders ativos sem N+1.
+   *
+   * @param params.active       1 = ativas (default), 0 = inativas
+   * @param params.document     Filtrar por CPF/CNPJ (opcional)
+   * @param params.account      Filtrar por conta master (opcional)
+   * @param params.subAccount   Filtrar por subconta específica (opcional)
+   * @param params.page         Página (default 1)
+   * @param params.perPage      Registros por página (default 1000, máx 1000)
+   */
+  async listPropTraders(params?: {
+    document?: string;
+    subscriptionPlanId?: number;
+    account?: string | null;
+    subAccount?: string;
+    active?: 0 | 1;
+    page?: number;
+    perPage?: number;
+  }): Promise<PropTradingSubscription[]> {
+    const result = await NelogicaClient.execute<PropTradingSubscription[] | PropTradingModernResponse>(
+      "prop_trading_list_user_subscription",
+      {
+        document: params?.document,
+        subscriptionPlanId: params?.subscriptionPlanId,
+        account: params?.account ?? null,
+        subAccount: params?.subAccount,
+        active: params?.active ?? 1,
+        page: params?.page ?? 1,
+        perPage: params?.perPage ?? 1000,
+      },
+    );
+
+    // Sucesso → array; erro → objeto { success: false, code, message }
+    return Array.isArray(result) ? result : [];
+  },
+
+  /**
+   * Cadastra um trader como subconta de teste na mesa proprietária.
+   *
+   * O campo `testAccount` é o número da subconta sendo criada.
+   * O campo `subscriptionPlanId` deve corresponder ao plano negociado pela MTCprop.
+   *
+   * Resposta de sucesso: { success: true, code: 200, message: "Operação concluída com sucesso." }
+   */
+  async cadastrarSubContaProp(
+    params: Omit<PropTradingCreateParams, "authenticationCode">,
+  ): Promise<PropTradingModernResponse> {
+    return NelogicaClient.execute<PropTradingModernResponse>(
+      "prop_trading_user_subscription",
+      params,
+    );
+  },
+
+  /**
+   * Cancela a subconta de um trader na mesa proprietária.
+   *
+   * Se `testAccount` for omitido, cancela TODAS as subcontas
+   * vinculadas à conta master informada.
+   */
+  async cancelarSubContaProp(
+    params: Omit<PropTradingCancelParams, "authenticationCode">,
+  ): Promise<PropTradingModernResponse> {
+    return NelogicaClient.execute<PropTradingModernResponse>(
+      "prop_trading_cancel_user_subscription",
+      params,
+    );
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // Endpoints auxiliares (ainda utilizados pela dashboard)
+  // ─────────────────────────────────────────────────────────────
+
   /**
    * Verifica o status de um CPF/CNPJ junto à Nelogica.
-   * "0" = Plano cancelado por inadimplência (Não usar)
+   * "0" = Plano cancelado por inadimplência
    * "1" = Não cadastrado
    * "2" = Ponto ativo na Nelogica (outra corretora)
    * "3" = Ponto ativo na própria corretora (MTCprop)
@@ -59,46 +145,6 @@ export const nelogicaService = {
   },
 
   /**
-   * Registra uma nova licença de acesso ao Profit (Profit Pro por padrão)
-   */
-  async cadastrarPonto(params: {
-    cpf_cnpj: string;
-    nome: string;
-    sobrenome: string;
-    cep: string;
-    estado: string;
-    cidade: string;
-    bairro: string;
-    logradouro: string;
-    numero: string;
-    email: string;
-    dataNascimento: string; // DD/MM/YYYY
-    sexo: 0 | 1; // 0 = Fem, 1 = Masc
-    titularConta: string;
-    contaID: string;
-    planoAssinaturaID: number;
-    produto?: string; // rt, pro, lite, ultra
-  }): Promise<NelogicaSignedPointResponse> {
-    return NelogicaClient.execute<NelogicaSignedPointResponse>("insere_ponto_assinado", {
-      pessoaFisica: 1, // Fixado PF por enquanto
-      produto: params.produto || "pro",
-      conta: params.contaID,
-      planoassinatura: params.planoAssinaturaID,
-      ...params,
-    });
-  },
-
-  /**
-   * Cancela a licença ativa de um cliente
-   */
-  async cancelarPonto(cpf_cnpj: string, produto: string = "pro"): Promise<NelogicaBaseResponse> {
-    return NelogicaClient.execute<NelogicaBaseResponse>("cancel_product", {
-      cpf_cnpj,
-      produto,
-    });
-  },
-
-  /**
    * Habilita módulo simulador
    */
   async habilitarSimulador(documento: string): Promise<NelogicaBaseResponse> {
@@ -123,18 +169,16 @@ export const nelogicaService = {
    */
   async configurarRiscoConta(params: {
     contaID: string;
-    grupo: string; // Ex: "PADRAO"
-    dailyLoss: number; // Perda máxima em valor absoluto
-    maxContratosTotais: number; // Ex: 10
+    grupo: string;
+    dailyLoss: number;
+    maxContratosTotais: number;
   }): Promise<NelogicaBaseResponse> {
-    // Usando regras genéricas para MTCprop
     return NelogicaClient.execute<NelogicaBaseResponse>("risco_conta", {
       contaID: params.contaID,
       grupo: params.grupo,
       habilitado: 1,
       dailyLoss: params.dailyLoss,
-      // Estes parâmetros variam de acordo com o plano
-      capitalPerOrder: params.maxContratosTotais * 1000, 
+      capitalPerOrder: params.maxContratosTotais * 1000,
       longCapitalPosition: params.maxContratosTotais * 1000,
       shortCapitalPosition: params.maxContratosTotais * 1000,
     });
@@ -150,9 +194,12 @@ export const nelogicaService = {
   },
 
   /**
-   * Atualiza perfil do investidor (1 = Agressivo é o padrao p/ futuros)
+   * Atualiza perfil do investidor (1 = Agressivo é o padrão p/ futuros)
    */
-  async updateSuitability(contaID: string, perfil: NelogicaSuitabilityProfile = 1): Promise<NelogicaBaseResponse> {
+  async updateSuitability(
+    contaID: string,
+    perfil: NelogicaSuitabilityProfile = 1,
+  ): Promise<NelogicaBaseResponse> {
     return NelogicaClient.execute<NelogicaBaseResponse>("update_suitability", {
       contaID,
       perfil,

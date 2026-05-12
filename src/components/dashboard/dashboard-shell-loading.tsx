@@ -14,7 +14,7 @@ export function DashboardShellLoading({
   variant = "table",
 }: {
   pageTitle?: string;
-  variant?: "table" | "detail" | "overview";
+  variant?: "table" | "detail" | "overview" | "active-plans" | "sales";
 }) {
   const company = getCompanySnapshot();
 
@@ -72,19 +72,133 @@ export function DashboardShellLoading({
 
           <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6 sm:p-8">
             <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="space-y-3">
-                  <SkeletonBlock className="h-5 w-36" />
-                  <SkeletonBlock className="h-11 w-64" />
-                  <SkeletonBlock className="h-4 w-80 max-w-full" />
+              {variant !== "active-plans" && variant !== "sales" && (
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="space-y-3">
+                    <SkeletonBlock className="h-5 w-36" />
+                    <SkeletonBlock className="h-11 w-64" />
+                    <SkeletonBlock className="h-4 w-80 max-w-full" />
+                  </div>
+                  <div className="flex gap-3">
+                    <SkeletonBlock className="h-11 w-28" />
+                    <SkeletonBlock className="h-11 w-36" />
+                  </div>
                 </div>
-                <div className="flex gap-3">
-                  <SkeletonBlock className="h-11 w-28" />
-                  <SkeletonBlock className="h-11 w-36" />
-                </div>
-              </div>
+              )}
 
-              {variant === "detail" ? (
+              {variant === "sales" ? (
+                <div className="theme-card overflow-hidden rounded-[24px]">
+                  {/* Search + filtros + export + recarregar */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                      <SkeletonBlock className="h-10 w-full lg:max-w-md" />
+                      <div className="flex gap-2">
+                        <SkeletonBlock className="h-10 w-24" />
+                        <SkeletonBlock className="h-10 w-28" />
+                        <SkeletonBlock className="h-10 w-10" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Table header (6 colunas) */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-3">
+                    <div className="grid grid-cols-6 gap-4">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonBlock key={i} className="h-3 w-20" />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 6 rows */}
+                  <div className="divide-y divide-[var(--app-border-soft)]">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="grid grid-cols-6 items-center gap-4 px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <SkeletonBlock className="h-5 w-5 rounded-full" />
+                          <SkeletonBlock className="h-4 w-24" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-32" />
+                          <SkeletonBlock className="h-3 w-40" />
+                        </div>
+                        <SkeletonBlock className="h-4 w-28" />
+                        <SkeletonBlock className="h-4 w-24" />
+                        <SkeletonBlock className="h-4 w-20" />
+                        <SkeletonBlock className="mx-auto h-10 w-10 rounded-[12px]" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between border-t border-[var(--app-border-soft)] px-6 py-4">
+                    <SkeletonBlock className="h-4 w-40" />
+                    <div className="flex gap-1">
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <SkeletonBlock key={i} className="h-9 w-9 rounded-[10px]" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : variant === "active-plans" ? (
+                <div className="theme-card overflow-hidden rounded-[24px]">
+                  {/* Search bar + Limpar */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-4">
+                    <div className="flex w-full max-w-xl flex-col gap-3 lg:flex-row lg:items-center">
+                      <SkeletonBlock className="h-10 flex-1" />
+                      <SkeletonBlock className="h-10 w-24" />
+                    </div>
+                  </div>
+
+                  {/* Table header */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-3">
+                    <div className="grid grid-cols-6 gap-4">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonBlock key={i} className="h-3 w-20" />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 6 rows */}
+                  <div className="divide-y divide-[var(--app-border-soft)]">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="grid grid-cols-6 items-center gap-4 px-6 py-4">
+                        {/* Subconta */}
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-16" />
+                          <SkeletonBlock className="h-3 w-24" />
+                          <SkeletonBlock className="h-3 w-28" />
+                        </div>
+                        {/* Trader */}
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-32" />
+                          <SkeletonBlock className="h-3 w-24" />
+                        </div>
+                        {/* Perfil de Risco */}
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-28" />
+                          <SkeletonBlock className="h-3 w-20" />
+                        </div>
+                        {/* Início */}
+                        <SkeletonBlock className="h-4 w-20" />
+                        {/* Status */}
+                        <SkeletonBlock className="h-6 w-16 rounded-full" />
+                        {/* Ações */}
+                        <SkeletonBlock className="ml-auto h-8 w-8 rounded-full" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between border-t border-[var(--app-border-soft)] px-6 py-4">
+                    <SkeletonBlock className="h-4 w-40" />
+                    <div className="flex gap-1">
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <SkeletonBlock key={i} className="h-9 w-9 rounded-[10px]" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : variant === "detail" ? (
                 <>
                   <div className="theme-card rounded-[24px] p-6">
                     <div className="grid gap-6 md:grid-cols-3">

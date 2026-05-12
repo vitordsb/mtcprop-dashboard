@@ -15,6 +15,7 @@ export default async function PlanosAtivosPage({ searchParams }: PlanosAtivosPag
   const data = await getActivePlansOverview({
     page: resolvedSearchParams.page,
     q: resolvedSearchParams.q,
+    limit: 6,
   });
 
   return <ActivePlansOverviewView data={data} />;

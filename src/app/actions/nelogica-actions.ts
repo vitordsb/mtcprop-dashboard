@@ -7,8 +7,54 @@ import { CACHE_TAGS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { nelogicaService } from "@/lib/services/nelogica-service";
 
+/**
+ * Variáveis de ambiente necessárias para a API Mesa Proprietária:
+ *
+ * NELOGICA_PROP_MASTER_ACCOUNT     → número da conta master da mesa na Nelogica
+ * NELOGICA_PROP_SUBSCRIPTION_PLAN_ID → ID do plano contratado pela MTCprop
+ */
+function getPropTradingConfig() {
+  const masterAccount = process.env.NELOGICA_PROP_MASTER_ACCOUNT;
+  const planIdStr = process.env.NELOGICA_PROP_SUBSCRIPTION_PLAN_ID;
+
+  if (!masterAccount) {
+    throw new Error(
+      "Variável NELOGICA_PROP_MASTER_ACCOUNT não configurada no .env.local.\n" +
+      "Informe o número da conta master da mesa proprietária na Nelogica.",
+    );
+  }
+
+  if (!planIdStr) {
+    throw new Error(
+      "Variável NELOGICA_PROP_SUBSCRIPTION_PLAN_ID não configurada no .env.local.\n" +
+      "Informe o ID do plano contratado pela MTCprop na Nelogica (ex: 5251).",
+    );
+  }
+
+  const subscriptionPlanId = Number.parseInt(planIdStr, 10);
+  if (!Number.isFinite(subscriptionPlanId)) {
+    throw new Error(
+      `NELOGICA_PROP_SUBSCRIPTION_PLAN_ID inválido: "${planIdStr}". Deve ser um número inteiro.`,
+    );
+  }
+
+  return { masterAccount, subscriptionPlanId };
+}
+
+function invalidatePlanosAtivos() {
+  revalidatePath("/dashboard/traders");
+  revalidatePath("/dashboard/planos-ativos");
+  revalidateTag(CACHE_TAGS.DASHBOARD_OVERVIEW, {});
+  revalidateTag(CACHE_TAGS.ACTIVE_PLANS_OVERVIEW, {});
+}
+
+// ─────────────────────────────────────────────────────────────
+// Provisionar — cria subconta na mesa proprietária
+// ─────────────────────────────────────────────────────────────
+
 export async function actionProvisionarLicenca(studentId: string) {
   await requireCurrentAdminUser();
+  const { masterAccount, subscriptionPlanId } = getPropTradingConfig();
 
   const student = await prisma.student.findUnique({
     where: { id: studentId },
@@ -21,117 +67,121 @@ export async function actionProvisionarLicenca(studentId: string) {
     },
   });
 
-  if (!student) throw new Error("Aluno não encontrado");
-  if (!student.email) throw new Error("Aluno não tem e-mail cadastrado");
+  if (!student) throw new Error("Aluno não encontrado.");
+  if (!student.email) throw new Error("Aluno não tem e-mail cadastrado.");
 
-  const cpf = student.nelogicaDocument || "00000000000"; // Requerer CPF real da base
-  if (cpf === "00000000000") {
-    throw new Error("O Aluno precisa ter o CPF preenchido para prosseguir com a licença.");
+  const cpf = student.nelogicaDocument;
+  if (!cpf) {
+    throw new Error("O aluno precisa ter o CPF preenchido para prosseguir com a licença.");
   }
 
-  // 1. Validar se a pessoa não está devendo pra Nelogica ou usando outro Profit em outra mesa
-  const statusNelogica = await nelogicaService.checkClientStatus(cpf);
-
-  if (statusNelogica.status === "0") {
-    throw new Error("CPF Bloqueado por Inadimplência na Nelogica.");
-  }
-
-  // Se = 2, logou em outra corretora. É bom notificar, mas no caso vamos prosseguir se for plano start/simples?
-  // O ideal aqui é definir como a mesa quer operar. Vamos permitir gerar para quem for = "1" (livre) ou dar overlay.
-  // Vamos considerar livre e provisionar.
-
-  // 2. Extrair dados de endereço de preenchimento obrigatório (aqui mocks provisórios de mesa operando simplificado)
-  const [firstName, ...lastNames] = student.name.split(" ");
   const productInfo = student.enrollments[0]?.product;
-
   if (!productInfo) {
-    throw new Error("O Aluno precisa ter um plano ativo para emitir licença do Profit.");
+    throw new Error("O aluno precisa ter um plano ativo para emitir licença do Profit.");
   }
 
-  // Cadastrando
-  const point = await nelogicaService.cadastrarPonto({
-    cpf_cnpj: cpf,
-    nome: firstName,
-    sobrenome: lastNames.join(" ") || "Trader",
-    cep: "00000000",
-    estado: "SP",
-    cidade: "São Paulo",
-    bairro: "Centro",
-    logradouro: "Rua Principal",
-    numero: "100",
+  const [firstName, ...lastNames] = student.name.split(" ");
+
+  /**
+   * O `testAccount` é o número da subconta a ser criada para este trader.
+   * Usamos os primeiros 8 caracteres do ID do student como identificador único.
+   * Salvo posteriormente em `nelogicaContaID`.
+   */
+  const subAccountId = student.id.substring(0, 8);
+
+  const resposta = await nelogicaService.cadastrarSubContaProp({
+    document: cpf,
+    naturalPerson: 1,
+    documentType: 1, // CPF
+    firstName,
+    lastName: lastNames.join(" ") || "Trader",
     email: student.email,
-    dataNascimento: "01/01/1990", // Placeholder (precisa vir do DB no futuro)
-    sexo: 1,
-    titularConta: student.name,
-    contaID: student.id.substring(0, 8), // Mapeamento da conta para um slug curto do banco
-    planoAssinaturaID: 1, // ID Base gerado na Nelogica para a MTCprop
-    produto: "pro", 
+    subscriptionPlanId,
+    testAccount: subAccountId,
   });
 
-  if (point.status !== "1" || !point.codigoAtivacao) {
-    throw new Error("Falha na Nelogica ao habilitar: " + JSON.stringify(point));
+  if (!resposta.success) {
+    throw new Error("Falha na Nelogica ao provisionar subconta: " + resposta.message);
   }
 
-  // 3. Configuração de Risco com base no 'maxContracts' do produto
+  // Configura risco base se o produto tiver maxContracts definido
   if (productInfo.maxContracts) {
-    await nelogicaService.configurarRiscoConta({
-      contaID: student.id.substring(0, 8),
-      grupo: "PADRAO",
-      dailyLoss: productInfo.price ? Number(productInfo.price) * -1 : -500, // Simulando loss limit basado no preço
-      maxContratosTotais: productInfo.maxContracts,
-    });
+    try {
+      await nelogicaService.configurarRiscoConta({
+        contaID: subAccountId,
+        grupo: "PADRAO",
+        dailyLoss: productInfo.price ? Number(productInfo.price) * -1 : -500,
+        maxContratosTotais: productInfo.maxContracts,
+      });
+    } catch {
+      // Risco não é bloqueante — subconta foi criada, apenas log
+      console.warn("[Nelogica] Aviso: falha ao configurar risco para subconta", subAccountId);
+    }
   }
 
-  // 4. Salvar tudo no nosso Prisma
+  // Salva a subconta no Student
   await prisma.student.update({
     where: { id: studentId },
     data: {
-      nelogicaContaID: student.id.substring(0, 8),
-      nelogicaActivationCode: point.codigoAtivacao,
+      nelogicaContaID: subAccountId,
       nelogicaStatus: "ACTIVE",
     },
   });
 
-  revalidatePath("/dashboard/traders");
-  revalidatePath("/dashboard/planos-ativos");
-  revalidateTag(CACHE_TAGS.DASHBOARD_OVERVIEW, {});
-  revalidateTag(CACHE_TAGS.ACTIVE_PLANS_OVERVIEW, {});
-  return { success: true, activationCode: point.codigoAtivacao };
+  invalidatePlanosAtivos();
+  return { success: true, subAccount: subAccountId, masterAccount };
 }
 
-export async function actionCancelarLicenca(studentId: string, customCpf?: string) {
+// ─────────────────────────────────────────────────────────────
+// Cancelar — cancela subconta na mesa proprietária
+// ─────────────────────────────────────────────────────────────
+
+export async function actionCancelarLicenca(studentId: string, _unused?: string) {
   await requireCurrentAdminUser();
+  const { masterAccount, subscriptionPlanId } = getPropTradingConfig();
 
   const student = await prisma.student.findUnique({
     where: { id: studentId },
   });
 
-  if (!student) throw new Error("Aluno não encontrado");
+  if (!student) throw new Error("Aluno não encontrado.");
 
-  const cpf = customCpf || student.nelogicaDocument;
-  if (!cpf) throw new Error("CPF ausente.");
+  const cpf = student.nelogicaDocument;
+  if (!cpf) throw new Error("CPF ausente no cadastro do aluno.");
 
-  const resposta = await nelogicaService.cancelarPonto(cpf, "pro");
+  const subAccount = student.nelogicaContaID ?? undefined;
 
-  if (resposta.status === "1") {
-    await prisma.student.update({
-      where: { id: studentId },
-      data: {
-        nelogicaStatus: "CANCELLED",
-        nelogicaActivationCode: null,
-      },
-    });
+  const resposta = await nelogicaService.cancelarSubContaProp({
+    document: cpf,
+    subscriptionPlanId,
+    account: masterAccount,
+    testAccount: subAccount,
+  });
 
-    revalidatePath("/dashboard/traders");
-    revalidatePath("/dashboard/planos-ativos");
-    revalidateTag(CACHE_TAGS.DASHBOARD_OVERVIEW, {});
-    revalidateTag(CACHE_TAGS.ACTIVE_PLANS_OVERVIEW, {});
-    return { success: true };
+  if (!resposta.success) {
+    throw new Error("Erro da Nelogica ao tentar cancelar: " + resposta.message);
   }
 
-  throw new Error("Erro da Nelogica ao tentar cancelar: " + JSON.stringify(resposta));
+  await prisma.student.update({
+    where: { id: studentId },
+    data: {
+      nelogicaStatus: "CANCELLED",
+      nelogicaActivationCode: null,
+    },
+  });
+
+  invalidatePlanosAtivos();
+  return { success: true };
 }
 
+// ─────────────────────────────────────────────────────────────
+// Reenviar Acesso
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Consulta status realtime do trader na Nelogica (API genérica de status_client).
+ * Mantido para compatibilidade — pode ser usado na página de Traders.
+ */
 export async function actionConsultarStatusRealtime(studentId: string) {
   await requireCurrentAdminUser();
 
@@ -143,27 +193,21 @@ export async function actionConsultarStatusRealtime(studentId: string) {
     throw new Error("CPF/Documento interno faltando para buscar status externo.");
   }
 
-  const result = await nelogicaService.checkClientStatus(student.nelogicaDocument);
-  const descriptionMap: Record<string, string> = {
-    "0": "Inadimplente (Bloqueado Nelogica)",
-    "1": "Não possui Profit vinculado",
-    "2": "Ponto ativo Nelogica (Outra Corretora)",
-    "3": "Ponto ativo MTCprop",
-    "4": "Já foi assinante/teste (Sem ponto ativo)",
-  };
+  // Na nova API Mesa Prop, a verificação de atividade é feita via
+  // prop_trading_list_user_subscription. Este endpoint legado ainda pode
+  // ser usado como verificação complementar.
+  const subAccount = student.nelogicaContaID;
+  const isActive = subAccount
+    ? (await nelogicaService.listPropTraders({ document: student.nelogicaDocument, active: 1 })).length > 0
+    : false;
 
-  const statusLiteral = descriptionMap[result.status] || "Status Desconhecido";
+  const statusLiteral = isActive ? "Ativo MTCprop" : "Inativo / Não encontrado";
 
   await prisma.student.update({
     where: { id: studentId },
-    data: {
-      nelogicaStatus: statusLiteral,
-    },
+    data: { nelogicaStatus: statusLiteral },
   });
 
-  revalidatePath("/dashboard/traders");
-  revalidatePath("/dashboard/planos-ativos");
-  revalidateTag(CACHE_TAGS.DASHBOARD_OVERVIEW, {});
-  revalidateTag(CACHE_TAGS.ACTIVE_PLANS_OVERVIEW, {});
-  return { status: result.status, statusLiteral };
+  invalidatePlanosAtivos();
+  return { isActive, statusLiteral };
 }

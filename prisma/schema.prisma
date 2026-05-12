@@ -68,6 +68,7 @@ model Student {
   id                       String              @id @default(cuid())
   name                     String
   email                    String              @unique
+  supabaseUserId           String?             @unique
   phone                    String?
   stage                    StudentStage        @default(ONBOARDING)
   mentorName               String?

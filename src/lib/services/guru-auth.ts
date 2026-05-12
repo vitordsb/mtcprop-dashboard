@@ -30,6 +30,8 @@ export function getGuruReadTokenCandidates() {
   );
 }
 
+const GURU_REQUEST_TIMEOUT_MS = 8000;
+
 export async function fetchGuruWithReadAuth(
   input: string,
   init: Omit<RequestInit, "headers"> & { headers?: HeadersInit } = {},
@@ -43,19 +45,31 @@ export async function fetchGuruWithReadAuth(
   let lastResponse: Response | null = null;
 
   for (const token of tokens) {
-    const response = await fetch(input, {
-      ...init,
-      headers: {
-        ...(init.headers ?? {}),
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GURU_REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(input, {
+        ...init,
+        signal: controller.signal,
+        headers: {
+          ...(init.headers ?? {}),
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    if (response.status !== 401 && response.status !== 403) {
-      return response;
+      if (response.status !== 401 && response.status !== 403) {
+        return response;
+      }
+
+      lastResponse = response;
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(`[Guru] timeout após ${GURU_REQUEST_TIMEOUT_MS}ms em ${input}`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    lastResponse = response;
   }
 
   return lastResponse as Response;

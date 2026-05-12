@@ -6,26 +6,40 @@ import {
 } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { nelogicaService } from "@/lib/services/nelogica-service";
+import type { PropTradingSubscription } from "@/lib/services/nelogica-types";
 import { unstable_cache } from "next/cache";
 
 export type ActivePlanListItem = {
   id: string;
   enrollmentId: string;
+  /** CPF/CNPJ do trader (vindo da Nelogica) */
+  document: string;
+  /**
+   * Subconta do trader na mesa Nelogica (campo `subAccount` da API).
+   * Salvo como `nelogicaContaID` no Student.
+   */
   conta: string;
+  /** Conta master da mesa (campo `account` da API) */
+  masterAccount: string | null;
+  /** Nome da conta master (campo `accountHolder` da API) — ex: "MTC Prop Remunerado" */
+  masterAccountHolder: string | null;
   studentName: string;
   planName: string;
+  /**
+   * Nome do plano contratado na Nelogica (campo `subscriptionPlanName`).
+   * Complementa o nome do plano interno.
+   */
+  nelogicaSubscriptionPlanName: string | null;
   riskProfile: string;
   profitPlatform: string;
   startedAt: string;
   limitLoss: string;
-  monthlyBalance: string;
-  totalBalance: string;
-  monthlyBalanceValue: number;
-  totalBalanceValue: number;
   nelogicaStatus: string | null;
   nelogicaActivationCode: string | null;
-  nelogicaLiveStatusCode: string | null;
-  nelogicaLiveStatusLabel: string | null;
+  /** Indica se o trader está ativo na Nelogica (subconta encontrada no batch) */
+  isNelogicaActive: boolean;
+  /** Data de criação da subconta na Nelogica */
+  nelogicaPointCreatedAt: string | null;
 };
 
 export type PlansPagination = {
@@ -42,31 +56,28 @@ export type ActivePlansOverview = {
   company: ReturnType<typeof getCompanySnapshot>;
   plans: ActivePlanListItem[];
   pagination: PlansPagination;
-};
-
-const NELOGICA_STATUS_LABEL: Record<string, string> = {
-  "0": "Bloqueado (Inadimplente)",
-  "1": "Sem licença",
-  "2": "Ativo (outra corretora)",
-  "3": "Ativo MTCprop",
-  "4": "Inativo",
+  /** Mensagem de erro da API Nelogica, se inacessível */
+  nelogicaError?: string;
 };
 
 const PLAN_RISK_PROFILE_MAP: Array<{ match: string; label: string; limitLoss: number }> = [
+  // Planos originais (legado)
   { match: "expert", label: "EXPERT", limitLoss: 1500 },
   { match: "avançado", label: "AVANÇADO", limitLoss: 1000 },
   { match: "avancado", label: "AVANÇADO", limitLoss: 1000 },
   { match: "intermediário", label: "INTERMEDIÁRIO", limitLoss: 600 },
   { match: "intermediario", label: "INTERMEDIÁRIO", limitLoss: 600 },
   { match: "start", label: "START", limitLoss: 300 },
+  // Planos da Nelogica via prop_trading
+  { match: "profit pro", label: "PROFIT PRO", limitLoss: 1500 },
+  { match: "profit one", label: "PROFIT ONE", limitLoss: 500 },
+  { match: "profit plus", label: "PROFIT PLUS", limitLoss: 1000 },
 ];
 
 function formatDate(value: Date | string | null | undefined) {
   if (!value) return "Sem data";
-
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return typeof value === "string" ? value : "Sem data";
-
   return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 
@@ -96,90 +107,49 @@ function normalizeText(value: string) {
 
 function resolveRiskProfile(planName: string) {
   const normalized = normalizeText(planName);
-
   for (const rule of PLAN_RISK_PROFILE_MAP) {
     if (normalized.includes(normalizeText(rule.match))) {
-      return {
-        label: rule.label,
-        limitLoss: formatCurrency(rule.limitLoss),
-      };
+      return { label: rule.label, limitLoss: formatCurrency(rule.limitLoss) };
     }
   }
-
-  return {
-    label: "PLANO",
-    limitLoss: "N/D",
-  };
+  return { label: "PLANO", limitLoss: "N/D" };
 }
 
-function getMonthRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+// ─────────────────────────────────────────────────────────────
+// Cache functions
+// ─────────────────────────────────────────────────────────────
 
-  const format = (date: Date) => date.toISOString().slice(0, 10);
-
-  return {
-    start: format(start),
-    end: format(end),
-  };
-}
-
-function sumFinancialResults(
-  results: Array<{ fResultadoFinanceiro: string }>,
-) {
-  return results.reduce((total, item) => {
-    const parsed = Number.parseFloat(item.fResultadoFinanceiro);
-    return total + (Number.isFinite(parsed) ? parsed : 0);
-  }, 0);
-}
-
-const getCachedNelogicaLiveStatus = unstable_cache(
-  async (document: string | null | undefined) => {
-    if (!document) return null;
-
-    const result = await nelogicaService.checkClientStatus(document);
-    return {
-      code: result.status,
-      label: NELOGICA_STATUS_LABEL[result.status] ?? `Status ${result.status}`,
-    };
+/**
+ * Carrega TODOS os traders ativos da mesa proprietária de uma única vez.
+ *
+ * Usa `prop_trading_list_user_subscription` com `active: 1`.
+ * Retorna mapa document (CPF normalizado) → PropTradingSubscription.
+ *
+ * Uma chamada por ciclo de 60s — elimina N+1 por trader na página.
+ */
+const getCachedPropTradersMap = unstable_cache(
+  async (): Promise<Map<string, PropTradingSubscription>> => {
+    try {
+      const subscriptions = await nelogicaService.listPropTraders({ active: 1, perPage: 1000 });
+      const map = new Map<string, PropTradingSubscription>();
+      for (const sub of subscriptions) {
+        // Indexa por CPF/CNPJ normalizado (somente dígitos)
+        const normalizedDoc = sub.document.replace(/\D/g, "");
+        map.set(normalizedDoc, sub);
+      }
+      return map;
+    } catch {
+      return new Map<string, PropTradingSubscription>();
+    }
   },
-  [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW, "nelogica-live-status"],
-  { revalidate: 120, tags: [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW] },
+  [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW, "nelogica-prop-traders-map"],
+  { revalidate: 60, tags: [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW] },
 );
 
-const getCachedBrokerAccount = unstable_cache(
-  async (contaID: string | null | undefined) => {
-    if (!contaID) return null;
 
-    const accounts = await nelogicaService.listBrokerAccounts({ contaID, nRows: 20 });
-    return accounts.find((item) => item.contaID === contaID) ?? null;
-  },
-  [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW, "nelogica-broker-account"],
-  { revalidate: 300, tags: [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW] },
-);
-
-const getCachedFinancialResultSummary = unstable_cache(
-  async (
-    contaID: string | null | undefined,
-    dtInicio: string,
-    dtFinal: string,
-    nRows: number,
-  ) => {
-    if (!contaID) return 0;
-
-    const results = await nelogicaService.listFinancialResults({
-      contaID,
-      dtInicio,
-      dtFinal,
-      nRows,
-    });
-
-    return sumFinancialResults(results);
-  },
-  [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW, "nelogica-financial-summary"],
-  { revalidate: 120, tags: [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW] },
-);
+// ─────────────────────────────────────────────────────────────
+// Main cached query
+// ─────────────────────────────────────────────────────────────
 
 const getCachedActivePlans = unstable_cache(
   async (
@@ -191,83 +161,73 @@ const getCachedActivePlans = unstable_cache(
     const requestedLimit = toPositiveInteger(params?.limit) ?? DEFAULT_PAGINATION_LIMIT;
     const limit = Math.min(requestedLimit, MAX_PAGINATION_LIMIT);
     const requestedPage = toPositiveInteger(params?.page) ?? 1;
-    const searchQuery = params?.q?.trim();
+    const searchQuery = params?.q?.trim().toLowerCase();
 
-    const baseWhere: Record<string, unknown> = { status: "ACTIVE" };
+    // Fonte primária: Nelogica (TODOS os traders ativos na mesa proprietária).
+    const propTradersMap = await getCachedPropTradersMap();
+    const allTraders = Array.from(propTradersMap.values());
 
-    if (searchQuery) {
-      baseWhere.OR = [
-        { student: { name: { contains: searchQuery, mode: "insensitive" } } },
-        { student: { email: { contains: searchQuery, mode: "insensitive" } } },
-        { student: { nelogicaContaID: { contains: searchQuery, mode: "insensitive" } } },
-        { student: { nelogicaStatus: { contains: searchQuery, mode: "insensitive" } } },
-        { student: { nelogicaActivationCode: { contains: searchQuery, mode: "insensitive" } } },
-        { product: { name: { contains: searchQuery, mode: "insensitive" } } },
-      ];
-    }
+    // Filtro por busca (nome do trader, document, conta, plano)
+    const filtered = searchQuery
+      ? allTraders.filter((t) =>
+          [t.subAccountHolder, t.document, t.subAccount, t.account, t.subscriptionPlanName, t.product]
+            .some((field) => field?.toLowerCase().includes(searchQuery)),
+        )
+      : allTraders;
 
-    const total = await prisma.enrollment.count({ where: baseWhere });
+    // Ordena por createdAt desc (mais recentes primeiro)
+    filtered.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+
+    const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const page = Math.min(requestedPage, totalPages);
     const skip = (page - 1) * limit;
+    const pageSlice = filtered.slice(skip, skip + limit);
 
-    const enrollments = await prisma.enrollment.findMany({
-      where: baseWhere,
-      include: { student: true, product: true },
-      orderBy: [{ startedAt: "desc" }],
-      skip,
-      take: limit,
+    // Enriquece com dados do banco (Student/Enrollment) se existir match por documento
+    const docs = pageSlice.map((t) => t.document.replace(/\D/g, "")).filter(Boolean);
+    const studentsArray = docs.length > 0
+      ? await prisma.student.findMany({
+          where: { nelogicaDocument: { in: docs } },
+          include: { enrollments: { where: { status: "ACTIVE" }, include: { product: true }, take: 1 } },
+        })
+      : [];
+    type StudentWithEnrollments = (typeof studentsArray)[number];
+    const studentsByDoc = new Map<string, StudentWithEnrollments>();
+    for (const s of studentsArray) {
+      if (s.nelogicaDocument) studentsByDoc.set(s.nelogicaDocument.replace(/\D/g, ""), s);
+    }
+
+    const plans: ActivePlanListItem[] = pageSlice.map((propSub) => {
+      const normalizedDoc = propSub.document.replace(/\D/g, "");
+      const student = studentsByDoc.get(normalizedDoc) ?? null;
+      const enrollment = student?.enrollments?.[0] ?? null;
+      const product = enrollment?.product ?? null;
+      const subAccount = propSub.subAccount;
+
+      const planNameRef = product?.name ?? propSub.subscriptionPlanName;
+      const resolvedRiskProfile = resolveRiskProfile(planNameRef);
+
+      return {
+        id: student?.id ?? `nelogica-${propSub.subAccount}`,
+        enrollmentId: enrollment?.id ?? "",
+        document: propSub.document,
+        conta: subAccount,
+        masterAccount: propSub.account,
+        masterAccountHolder: propSub.accountHolder,
+        studentName: propSub.subAccountHolder || student?.name || "—",
+        planName: planNameRef,
+        nelogicaSubscriptionPlanName: propSub.subscriptionPlanName,
+        riskProfile: resolvedRiskProfile.label,
+        profitPlatform: propSub.product,
+        startedAt: formatDate(propSub.createdAt),
+        limitLoss: resolvedRiskProfile.limitLoss,
+        nelogicaStatus: student?.nelogicaStatus ?? "ATIVO",
+        nelogicaActivationCode: propSub.activationCode,
+        isNelogicaActive: true,
+        nelogicaPointCreatedAt: propSub.createdAt,
+      } satisfies ActivePlanListItem;
     });
-
-    const monthRange = getMonthRange();
-
-    const plans = await Promise.all(
-      enrollments.map(async (enrollment) => {
-        const { student, product } = enrollment;
-        const contaID = student.nelogicaContaID ?? "";
-
-        const [liveStatus, brokerAccount, monthlyBalanceValue, totalBalanceValue] =
-          await Promise.allSettled([
-            getCachedNelogicaLiveStatus(student.nelogicaDocument),
-            getCachedBrokerAccount(contaID),
-            getCachedFinancialResultSummary(contaID, monthRange.start, monthRange.end, 200),
-            getCachedFinancialResultSummary(contaID, "2020-01-01", monthRange.end, 2000),
-          ]);
-
-        const resolvedRiskProfile = resolveRiskProfile(product.name);
-        const resolvedLiveStatus = liveStatus.status === "fulfilled" ? liveStatus.value : null;
-
-        const resolvedBrokerAccount =
-          brokerAccount.status === "fulfilled"
-            ? brokerAccount.value
-            : null;
-
-        const resolvedMonthlyBalance =
-          monthlyBalanceValue.status === "fulfilled" ? monthlyBalanceValue.value : 0;
-        const resolvedTotalBalance =
-          totalBalanceValue.status === "fulfilled" ? totalBalanceValue.value : 0;
-
-        return {
-          id: student.id,
-          enrollmentId: enrollment.id,
-          conta: contaID || "Sem conta",
-          studentName: student.name,
-          planName: product.name,
-          riskProfile: resolvedRiskProfile.label,
-          profitPlatform: resolvedBrokerAccount?.plataforma || student.nelogicaProduct || "Profit Pro",
-          startedAt: formatDate(resolvedBrokerAccount?.dtInicioPlataforma ?? enrollment.startedAt),
-          limitLoss: resolvedRiskProfile.limitLoss,
-          monthlyBalance: formatCurrency(resolvedMonthlyBalance),
-          totalBalance: formatCurrency(resolvedTotalBalance),
-          monthlyBalanceValue: resolvedMonthlyBalance,
-          totalBalanceValue: resolvedTotalBalance,
-          nelogicaStatus: student.nelogicaStatus,
-          nelogicaActivationCode: student.nelogicaActivationCode,
-          nelogicaLiveStatusCode: resolvedLiveStatus?.code ?? null,
-          nelogicaLiveStatusLabel: resolvedLiveStatus?.label ?? null,
-        } satisfies ActivePlanListItem;
-      }),
-    );
 
     return {
       company: getCompanySnapshot(),
@@ -284,7 +244,7 @@ const getCachedActivePlans = unstable_cache(
     };
   },
   [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW],
-  { revalidate: 30, tags: [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW] },
+  { revalidate: 60, tags: [CACHE_TAGS.ACTIVE_PLANS_OVERVIEW] },
 );
 
 export const plansService = {

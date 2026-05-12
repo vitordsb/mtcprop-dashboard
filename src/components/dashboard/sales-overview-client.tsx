@@ -3,8 +3,6 @@
 import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
 import {
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   CircleDashed,
   CreditCard,
   Download,
@@ -20,6 +18,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { PaginationClient } from "@/components/dashboard/pagination-client";
 import {
   getSemanticStatusTextClass,
   getSemanticStatusTone,
@@ -514,16 +513,14 @@ export function SalesOverviewClient({ data }: SalesOverviewClientProps) {
     return sortSales(filtered, filters.sortBy);
   }, [data.sales, deferredSearch, filters]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredSales.length / data.defaultPageSize),
-  );
+  const pageSize = 6;
+  const totalPages = Math.max(1, Math.ceil(filteredSales.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const visibleSales = useMemo(() => {
-    const start = (safeCurrentPage - 1) * data.defaultPageSize;
-    return filteredSales.slice(start, start + data.defaultPageSize);
-  }, [safeCurrentPage, data.defaultPageSize, filteredSales]);
+    const start = (safeCurrentPage - 1) * pageSize;
+    return filteredSales.slice(start, start + pageSize);
+  }, [safeCurrentPage, filteredSales]);
 
   const activeFilterCount = [
     filters.contact,
@@ -625,71 +622,9 @@ export function SalesOverviewClient({ data }: SalesOverviewClientProps) {
 
   return (
     <section className="theme-card overflow-hidden rounded-[24px]">
-      <div className="border-b border-[var(--app-border-soft)] px-6 py-5">
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="mb-3 h-[2px] w-10 rounded-full bg-[var(--brand)]" />
-              <h2 className="theme-title text-[34px] font-semibold tracking-[-0.06em]">
-                Vendas
-              </h2>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={exportSales}
-                className="theme-accent-soft inline-flex items-center gap-2 rounded-[12px] px-4 py-2 text-sm font-medium transition hover:brightness-[1.03]"
-              >
-                <Download className="h-4 w-4" />
-                XLS
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  startTransition(() => {
-                    router.refresh();
-                  })
-                }
-                className="theme-card-soft theme-text inline-flex items-center justify-center rounded-[12px] border border-[var(--app-border-strong)] px-3 py-2 text-sm font-medium transition hover:bg-[var(--app-hover)]"
-              >
-                <LoaderCircle className={`h-4 w-4 ${isPending ? "animate-spin" : ""}`} />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="theme-pill-soft theme-text-subtle inline-flex rounded-[999px] px-3 py-2 text-sm font-medium">
-                {filteredSales.length} de {data.sales.length}
-              </span>
-
-              {data.periodLabel ? (
-                <span className="theme-pill-soft theme-text-subtle inline-flex rounded-[999px] px-3 py-2 text-sm font-medium">
-                  {data.periodLabel}
-                </span>
-              ) : null}
-
-              {isSearching ? (
-                <span className="theme-accent-text inline-flex items-center gap-2 text-sm font-medium">
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                  Pesquisando...
-                </span>
-              ) : null}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsFilterModalOpen(true)}
-              className="theme-text inline-flex items-center gap-2 rounded-[12px] border border-[var(--app-border-strong)] bg-[var(--app-surface)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--app-hover)]"
-            >
-              <Filter className="h-4 w-4" />
-              {activeFilterCount > 0 ? `Filtros (${activeFilterCount})` : "Filtros"}
-            </button>
-          </div>
-
-          <div className="relative w-full lg:max-w-xl">
+      <div className="border-b border-[var(--app-border-soft)] px-6 py-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full lg:max-w-md">
             <Search className="theme-text-subtle pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2" />
             <input
               value={searchTerm}
@@ -698,16 +633,52 @@ export function SalesOverviewClient({ data }: SalesOverviewClientProps) {
                 setCurrentPage(1);
               }}
               placeholder="Pesquisar por código, contato, email ou produto..."
-              className="theme-input w-full rounded-[12px] border py-3 pr-4 pl-11 text-sm outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
+              className="theme-input w-full rounded-[12px] border py-2.5 pr-4 pl-11 text-sm outline-none transition focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]"
             />
+            {isSearching && (
+              <LoaderCircle className="theme-accent-text pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin" />
+            )}
           </div>
 
-          {!data.guruConfigured ? (
-            <div className="theme-warning-box rounded-[16px] px-4 py-3 text-sm">
-              `GURU_USER_TOKEN` não configurado. A listagem de vendas da Guru só aparece quando esse token estiver disponível.
-            </div>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsFilterModalOpen(true)}
+              className="theme-text inline-flex items-center gap-2 rounded-[12px] border border-[var(--app-border-strong)] bg-[var(--app-surface)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--app-hover)]"
+            >
+              <Filter className="h-4 w-4" />
+              {activeFilterCount > 0 ? `Filtros (${activeFilterCount})` : "Filtros"}
+            </button>
+
+            <button
+              type="button"
+              onClick={exportSales}
+              className="theme-accent-soft inline-flex items-center gap-2 rounded-[12px] px-4 py-2 text-sm font-medium transition hover:brightness-[1.03]"
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                startTransition(() => {
+                  router.refresh();
+                })
+              }
+              aria-label="Recarregar"
+              className="theme-card-soft theme-text inline-flex h-10 w-10 items-center justify-center rounded-[12px] border border-[var(--app-border-strong)] transition hover:bg-[var(--app-hover)]"
+            >
+              <LoaderCircle className={`h-4 w-4 ${isPending ? "animate-spin" : ""}`} />
+            </button>
+          </div>
         </div>
+
+        {!data.guruConfigured ? (
+          <div className="theme-warning-box mt-3 rounded-[16px] px-4 py-3 text-sm">
+            `GURU_USER_TOKEN` não configurado. A listagem de vendas da Guru só aparece quando esse token estiver disponível.
+          </div>
+        ) : null}
       </div>
 
       <div className="overflow-x-auto">
@@ -791,41 +762,13 @@ export function SalesOverviewClient({ data }: SalesOverviewClientProps) {
         </table>
       </div>
 
-      <div className="border-t border-[var(--app-border-soft)] px-6 py-4">
-        <div className="flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-            disabled={safeCurrentPage === 1}
-            className={`inline-flex items-center gap-2 rounded-[12px] border px-4 py-2 text-sm font-medium transition ${
-              safeCurrentPage > 1
-                ? "theme-card-soft theme-text border-[var(--app-border-strong)] hover:bg-[var(--app-hover)]"
-                : "cursor-not-allowed border-[var(--app-border-soft)] bg-[var(--app-surface-soft)] text-[var(--app-text-subtle)]"
-            }`}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Anterior
-          </button>
-
-          <span className="theme-text-muted min-w-[140px] text-center text-sm font-medium">
-            Página {safeCurrentPage} de {totalPages}
-          </span>
-
-          <button
-            type="button"
-            onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-            disabled={safeCurrentPage >= totalPages}
-            className={`inline-flex items-center gap-2 rounded-[12px] border px-4 py-2 text-sm font-medium transition ${
-              safeCurrentPage < totalPages
-                ? "theme-card-soft theme-text border-[var(--app-border-strong)] hover:bg-[var(--app-hover)]"
-                : "cursor-not-allowed border-[var(--app-border-soft)] bg-[var(--app-surface-soft)] text-[var(--app-text-subtle)]"
-            }`}
-          >
-            Próximo
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+      <PaginationClient
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        total={filteredSales.length}
+        itemsOnPage={visibleSales.length}
+        onPageChange={setCurrentPage}
+      />
 
       <SalesFiltersModal
         isOpen={isFilterModalOpen}

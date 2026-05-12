@@ -500,7 +500,7 @@ const getCachedDashboardOverview = unstable_cache(
   },
   [CACHE_TAGS.DASHBOARD_OVERVIEW],
   {
-    revalidate: 45,
+    revalidate: 300,
     tags: [CACHE_TAGS.DASHBOARD_OVERVIEW],
   },
 );
