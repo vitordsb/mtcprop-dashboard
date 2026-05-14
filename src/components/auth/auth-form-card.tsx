@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { MtcpropMark } from "@/components/brand/mtcprop-mark";
 
@@ -27,12 +27,23 @@ export function AuthFormCard({ mode, notice }: AuthFormCardProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  /** True quando login OK e a navegação para /dashboard começou.
+   *  Mantém o overlay + botão disabled até o RSC do dashboard chegar. */
+  const [navigating, setNavigating] = useState(false);
   const [loginValues, setLoginValues] = useState<LoginValues>({
     email: "",
     password: "",
   });
 
   const isLogin = mode === "login";
+
+  // Prefetch agressivo: começa a buscar o RSC do /dashboard assim que a tela monta.
+  // Quando o user terminar de digitar e enviar, o payload já está warm no cache.
+  useEffect(() => {
+    if (isLogin) {
+      router.prefetch("/dashboard");
+    }
+  }, [isLogin, router]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,14 +77,16 @@ export function AuthFormCard({ mode, notice }: AuthFormCardProps) {
 
       if (!response.ok) {
         setError(payload?.error?.message ?? "Credenciais invalidas.");
+        setPending(false);
         return;
       }
 
+      // Sucesso: mantém pending + ativa overlay até a navegação completar.
+      // Sem `router.refresh()` (desnecessário — o middleware já refletiu a sessão nova).
+      setNavigating(true);
       router.replace("/dashboard");
-      router.refresh();
     } catch {
       setError("Nao foi possivel validar seu acesso agora. Tente novamente.");
-    } finally {
       setPending(false);
     }
   }
@@ -176,13 +189,38 @@ export function AuthFormCard({ mode, notice }: AuthFormCardProps) {
 
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || navigating}
           className="theme-button-primary mt-2 flex w-full items-center justify-center gap-2 rounded-[12px] px-5 py-3.5 text-base font-semibold transition disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {pending ? "Entrando..." : "Entrar no painel"}
-          <ArrowRight className="h-4 w-4" />
+          {navigating ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando painel...
+            </>
+          ) : pending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Validando...
+            </>
+          ) : (
+            <>
+              Entrar no painel
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
         </button>
       </form>
+
+      {navigating && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[var(--app-page-bg)]/85 backdrop-blur-sm"
+        >
+          <Loader2 className="h-10 w-10 animate-spin text-[var(--brand)]" />
+          <p className="theme-text text-sm font-medium">Carregando painel...</p>
+        </div>
+      )}
 
       <div className="theme-text-muted mt-6 flex items-center justify-between gap-4 text-sm">
         <Link href="/recuperar-senha" className="theme-link transition">
