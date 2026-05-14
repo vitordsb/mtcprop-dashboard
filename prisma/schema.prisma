@@ -50,6 +50,27 @@ enum AccessStatus {
   EXPIRED
 }
 
+enum ApprovalStatus {
+  PENDENTE
+  APROVADO
+  REPROVADO
+}
+
+enum SolicitacaoType {
+  APROVACAO
+  LIBERACAO_PLATAFORMA
+  MIGRACAO_MESA_REAL
+  RESET_GRATUITO
+  REPASSE
+}
+
+enum SolicitacaoStatus {
+  PENDENTE
+  APROVADA
+  REJEITADA
+  CONCLUIDA
+}
+
 model AdminUser {
   id                  String               @id @default(cuid())
   name                String
@@ -90,6 +111,7 @@ model Student {
   updatedAt                DateTime            @updatedAt
   enrollments              Enrollment[]
   accessGrants             AccessGrant[]
+  solicitacoes             Solicitacao[]
 }
 
 model Product {
@@ -119,6 +141,9 @@ model Enrollment {
   guruProductName       String?
   guruContactId         String?
   guruLastWebhookAt     DateTime?
+  approvalStatus        ApprovalStatus   @default(PENDENTE)
+  approvalDecidedAt     DateTime?
+  approvalDecidedById   String?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
   student               Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -128,6 +153,31 @@ model Enrollment {
   @@index([studentId, status])
   @@index([productId])
   @@index([guruSubscriptionId])
+  @@index([approvalStatus])
+}
+
+model Solicitacao {
+  id           String            @id @default(cuid())
+  studentId    String
+  type         SolicitacaoType
+  status       SolicitacaoStatus @default(PENDENTE)
+  /// Conta master da Nelogica relacionada (opcional, ajuda no roteamento das aprovações).
+  masterAccount String?
+  /// CPF/CNPJ vindo da Nelogica (snapshot no momento da solicitação).
+  document     String?
+  /// Observação livre do trader ao criar a solicitação.
+  message      String?
+  /// Resposta/observação do admin ao aprovar/rejeitar.
+  adminNotes   String?
+  decidedAt    DateTime?
+  decidedById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  student      Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([status, type])
+  @@index([studentId])
+  @@index([createdAt])
 }
 
 model AccessGrant {

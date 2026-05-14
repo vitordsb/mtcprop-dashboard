@@ -30,6 +30,14 @@ export type ActivePlanListItem = {
    * Complementa o nome do plano interno.
    */
   nelogicaSubscriptionPlanName: string | null;
+  /** Nome do plano comprado na Guru (vindo do Enrollment.guruProductName) — match por CPF. */
+  guruPlanName: string | null;
+  /** Status atual da assinatura Guru — usado pra status de mensalidade etc. */
+  guruStatus: string | null;
+  /** Aprovação interna (APROVADO / REPROVADO / PENDENTE). */
+  approvalStatus: "APROVADO" | "REPROVADO" | "PENDENTE";
+  /** Data em que o admin decidiu (aprovou ou reprovou). */
+  approvalDecidedAt: string | null;
   riskProfile: string;
   profitPlatform: string;
   startedAt: string;
@@ -218,6 +226,10 @@ const getCachedActivePlans = unstable_cache(
         studentName: propSub.subAccountHolder || student?.name || "—",
         planName: planNameRef,
         nelogicaSubscriptionPlanName: propSub.subscriptionPlanName,
+        guruPlanName: enrollment?.guruProductName ?? null,
+        guruStatus: enrollment?.guruStatus ?? null,
+        approvalStatus: (enrollment?.approvalStatus as "APROVADO" | "REPROVADO" | "PENDENTE" | undefined) ?? "PENDENTE",
+        approvalDecidedAt: enrollment?.approvalDecidedAt ? enrollment.approvalDecidedAt.toISOString() : null,
         riskProfile: resolvedRiskProfile.label,
         profitPlatform: propSub.product,
         startedAt: formatDate(propSub.createdAt),

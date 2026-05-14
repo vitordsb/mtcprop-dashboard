@@ -56,6 +56,28 @@ export async function getActivePlansOverview(params?: {
   return plansService.getActivePlans(params);
 }
 
+export async function getMensalidadesOverview(params?: {
+  page?: number | string | null;
+  limit?: number | string | null;
+  q?: string | null;
+}) {
+  await requireCurrentAdminUser();
+  const { mensalidadesService } = await import("@/lib/services/mensalidades-service");
+  return mensalidadesService.getOverview(params);
+}
+
+export async function getSolicitacoesOverview(params?: {
+  page?: number | string | null;
+  limit?: number | string | null;
+  q?: string | null;
+  status?: string | null;
+  type?: string | null;
+}) {
+  await requireCurrentAdminUser();
+  const { solicitacoesService } = await import("@/lib/services/solicitacoes-service");
+  return solicitacoesService.getOverview(params);
+}
+
 export async function getAdminUsersOverview(): Promise<AdminUsersOverview> {
   await requireCurrentAdminUser();
   return adminUsersService.getOverview();

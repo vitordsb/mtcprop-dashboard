@@ -14,7 +14,14 @@ export function DashboardShellLoading({
   variant = "table",
 }: {
   pageTitle?: string;
-  variant?: "table" | "detail" | "overview" | "active-plans" | "sales";
+  variant?:
+    | "table"
+    | "detail"
+    | "overview"
+    | "active-plans"
+    | "sales"
+    | "mensalidades"
+    | "solicitacoes";
 }) {
   const company = getCompanySnapshot();
 
@@ -72,7 +79,10 @@ export function DashboardShellLoading({
 
           <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6 sm:p-8">
             <div className="space-y-6">
-              {variant !== "active-plans" && variant !== "sales" && (
+              {variant !== "active-plans" &&
+                variant !== "sales" &&
+                variant !== "mensalidades" &&
+                variant !== "solicitacoes" && (
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="space-y-3">
                     <SkeletonBlock className="h-5 w-36" />
@@ -86,7 +96,101 @@ export function DashboardShellLoading({
                 </div>
               )}
 
-              {variant === "sales" ? (
+              {variant === "solicitacoes" ? (
+                <div className="theme-card overflow-hidden rounded-[24px]">
+                  {/* Tabs */}
+                  <div className="flex gap-2 border-b border-[var(--app-border-soft)] px-4 py-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <SkeletonBlock key={i} className="h-9 w-32 rounded-[10px]" />
+                    ))}
+                  </div>
+                  {/* Search */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-4">
+                    <div className="flex w-full max-w-xl flex-col gap-3 lg:flex-row lg:items-center">
+                      <SkeletonBlock className="h-10 flex-1" />
+                      <SkeletonBlock className="h-10 w-24" />
+                    </div>
+                  </div>
+                  {/* List */}
+                  <div className="divide-y divide-[var(--app-border-soft)]">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="flex items-start justify-between gap-3 px-6 py-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex gap-2">
+                            <SkeletonBlock className="h-6 w-32 rounded-full" />
+                            <SkeletonBlock className="h-6 w-24 rounded-full" />
+                          </div>
+                          <SkeletonBlock className="h-4 w-48" />
+                          <SkeletonBlock className="h-3 w-64" />
+                        </div>
+                        <div className="space-y-2">
+                          <SkeletonBlock className="h-3 w-32" />
+                          <SkeletonBlock className="h-8 w-24 rounded-[10px]" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between border-t border-[var(--app-border-soft)] px-6 py-4">
+                    <SkeletonBlock className="h-4 w-40" />
+                    <div className="flex gap-1">
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <SkeletonBlock key={i} className="h-9 w-9 rounded-[10px]" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : variant === "mensalidades" ? (
+                <div className="theme-card overflow-hidden rounded-[24px]">
+                  {/* Search + Limpar */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-4">
+                    <div className="flex w-full max-w-xl flex-col gap-3 lg:flex-row lg:items-center">
+                      <SkeletonBlock className="h-10 flex-1" />
+                      <SkeletonBlock className="h-10 w-24" />
+                    </div>
+                  </div>
+                  {/* Header (6 colunas) */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-3">
+                    <div className="grid grid-cols-6 gap-4">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonBlock key={i} className="h-3 w-20" />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Rows */}
+                  <div className="divide-y divide-[var(--app-border-soft)]">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="grid grid-cols-6 items-center gap-4 px-6 py-4">
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-16" />
+                          <SkeletonBlock className="h-3 w-24" />
+                          <SkeletonBlock className="h-3 w-28" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-32" />
+                          <SkeletonBlock className="h-3 w-24" />
+                        </div>
+                        <SkeletonBlock className="h-4 w-24" />
+                        <SkeletonBlock className="h-4 w-20" />
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-24" />
+                          <SkeletonBlock className="h-3 w-16" />
+                        </div>
+                        <SkeletonBlock className="h-6 w-20 rounded-full" />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between border-t border-[var(--app-border-soft)] px-6 py-4">
+                    <SkeletonBlock className="h-4 w-40" />
+                    <div className="flex gap-1">
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <SkeletonBlock key={i} className="h-9 w-9 rounded-[10px]" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : variant === "sales" ? (
                 <div className="theme-card overflow-hidden rounded-[24px]">
                   {/* Search + filtros + export + recarregar */}
                   <div className="border-b border-[var(--app-border-soft)] px-6 py-4">
@@ -151,8 +255,8 @@ export function DashboardShellLoading({
 
                   {/* Table header */}
                   <div className="border-b border-[var(--app-border-soft)] px-6 py-3">
-                    <div className="grid grid-cols-6 gap-4">
-                      {Array.from({ length: 6 }).map((_, i) => (
+                    <div className="grid grid-cols-8 gap-4">
+                      {Array.from({ length: 8 }).map((_, i) => (
                         <SkeletonBlock key={i} className="h-3 w-20" />
                       ))}
                     </div>
@@ -161,7 +265,7 @@ export function DashboardShellLoading({
                   {/* 6 rows */}
                   <div className="divide-y divide-[var(--app-border-soft)]">
                     {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="grid grid-cols-6 items-center gap-4 px-6 py-4">
+                      <div key={i} className="grid grid-cols-8 items-center gap-4 px-6 py-4">
                         {/* Subconta */}
                         <div className="space-y-1.5">
                           <SkeletonBlock className="h-4 w-16" />
@@ -173,13 +277,20 @@ export function DashboardShellLoading({
                           <SkeletonBlock className="h-4 w-32" />
                           <SkeletonBlock className="h-3 w-24" />
                         </div>
-                        {/* Perfil de Risco */}
+                        {/* Plataforma */}
                         <div className="space-y-1.5">
                           <SkeletonBlock className="h-4 w-28" />
                           <SkeletonBlock className="h-3 w-20" />
                         </div>
+                        {/* Plano (Guru) */}
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-28" />
+                          <SkeletonBlock className="h-3 w-16" />
+                        </div>
                         {/* Início */}
                         <SkeletonBlock className="h-4 w-20" />
+                        {/* Aprovação */}
+                        <SkeletonBlock className="h-6 w-20 rounded-full" />
                         {/* Status */}
                         <SkeletonBlock className="h-6 w-16 rounded-full" />
                         {/* Ações */}

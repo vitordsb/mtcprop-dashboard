@@ -9,4 +9,6 @@ export const CACHE_TAGS = {
   SALES_OVERVIEW: "sales-overview",
   SALE_DETAIL: "sale-detail",
   ADMIN_USERS_OVERVIEW: "admin-users-overview",
+  MENSALIDADES_OVERVIEW: "mensalidades-overview",
+  SOLICITACOES_OVERVIEW: "solicitacoes-overview",
 } as const;

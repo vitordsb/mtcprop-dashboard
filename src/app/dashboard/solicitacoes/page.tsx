@@ -1,27 +1,26 @@
-import { ClipboardList } from "lucide-react";
-
-import { DashboardShell } from "@/components/dashboard/app-shell";
-import { getDashboardOverview } from "@/lib/api";
+import { SolicitacoesOverviewView } from "@/components/dashboard/solicitacoes-overview";
+import { getSolicitacoesOverview } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
-export default async function SolicitacoesPage() {
-  const { company } = await getDashboardOverview();
+type SolicitacoesPageProps = {
+  searchParams?: Promise<{
+    page?: string;
+    q?: string;
+    status?: string;
+    type?: string;
+  }>;
+};
 
-  return (
-    <DashboardShell company={company} pageTitle="Solicitações">
-      <div className="theme-card flex flex-col items-center justify-center rounded-[22px] border-dashed py-24 text-center">
-        <div className="theme-accent-icon mb-5 flex h-14 w-14 items-center justify-center rounded-[18px]">
-          <ClipboardList className="h-6 w-6" />
-        </div>
-        <h2 className="theme-title text-xl font-semibold tracking-[-0.04em]">
-          Solicitações
-        </h2>
-        <p className="theme-text-muted mt-2 max-w-sm text-sm leading-6">
-          Fila de solicitações de saque, pedidos de acesso e outras ações que
-          aguardam aprovação da equipe. Em desenvolvimento.
-        </p>
-      </div>
-    </DashboardShell>
-  );
+export default async function SolicitacoesPage({ searchParams }: SolicitacoesPageProps) {
+  const resolved = (await searchParams) ?? {};
+  const data = await getSolicitacoesOverview({
+    page: resolved.page,
+    q: resolved.q,
+    status: resolved.status ?? "PENDENTE",
+    type: resolved.type,
+    limit: 6,
+  });
+
+  return <SolicitacoesOverviewView data={data} />;
 }

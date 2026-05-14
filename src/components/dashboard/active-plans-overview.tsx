@@ -10,6 +10,7 @@ import { getSemanticStatusBadgeClass } from "@/components/dashboard/status-badge
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { Pagination } from "@/components/dashboard/pagination";
 import { ActivePlansActionsMenu } from "@/components/dashboard/active-plans-actions-menu";
+import { ApprovalCell } from "@/components/dashboard/approval-cell";
 import {
   actionCancelarLicenca,
   actionProvisionarLicenca,
@@ -61,13 +62,15 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
 
         {/* TABLE */}
         <div className="overflow-x-auto">
-          <table className="min-w-[800px] w-full">
+          <table className="min-w-[1100px] w-full">
             <thead className="theme-table-head">
               <tr className="theme-text-subtle text-left text-[11px] font-semibold uppercase tracking-[0.18em]">
                 <th className="px-6 py-4">Subconta</th>
                 <th className="px-4 py-4">Trader</th>
                 <th className="px-4 py-4">Plataforma</th>
+                <th className="px-4 py-4">Plano (Guru)</th>
                 <th className="px-4 py-4">Início</th>
+                <th className="px-4 py-4">Aprovação</th>
                 <th className="px-4 py-4">Status</th>
                 <th className="w-[60px] px-4 py-4 border-l border-[var(--app-border-soft)] text-center">Ações</th>
               </tr>
@@ -76,7 +79,7 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
             <tbody>
               {data.plans.length === 0 ? (
                 <tr className="border-t border-[var(--app-border-soft)]">
-                  <td colSpan={6} className="px-6 py-14 text-center">
+                  <td colSpan={8} className="px-6 py-14 text-center">
                     <div className="space-y-2">
                       <p className="theme-title text-base font-semibold">Nenhum trader encontrado.</p>
                       <p className="theme-text-subtle text-sm">
@@ -120,7 +123,7 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
                       </div>
                     </td>
 
-                    {/* Perfil de Risco */}
+                    {/* Plataforma */}
                     <td className="px-4 py-4">
                       <div className="space-y-0.5">
                         {p.nelogicaSubscriptionPlanName ? (
@@ -134,9 +137,32 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
                       </div>
                     </td>
 
+                    {/* Plano (Guru) */}
+                    <td className="px-4 py-4">
+                      {p.guruPlanName ? (
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-[var(--app-text)]">{p.guruPlanName}</p>
+                          {p.guruStatus && (
+                            <p className="text-[11px] text-[var(--app-text-subtle)]">{p.guruStatus}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[var(--app-text-subtle)]">Sem venda Guru</span>
+                      )}
+                    </td>
+
                     {/* Início */}
                     <td className="px-4 py-4 text-[13px] text-[var(--app-text-subtle)]">
                       {p.startedAt}
+                    </td>
+
+                    {/* Aprovação */}
+                    <td className="px-4 py-4">
+                      <ApprovalCell
+                        enrollmentId={p.enrollmentId}
+                        status={p.approvalStatus}
+                        decidedAt={p.approvalDecidedAt}
+                      />
                     </td>
 
                     {/* Status */}
