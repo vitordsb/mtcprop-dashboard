@@ -21,7 +21,8 @@ export function DashboardShellLoading({
     | "active-plans"
     | "sales"
     | "mensalidades"
-    | "solicitacoes";
+    | "solicitacoes"
+    | "traders";
 }) {
   const company = getCompanySnapshot();
 
@@ -82,7 +83,8 @@ export function DashboardShellLoading({
               {variant !== "active-plans" &&
                 variant !== "sales" &&
                 variant !== "mensalidades" &&
-                variant !== "solicitacoes" && (
+                variant !== "solicitacoes" &&
+                variant !== "traders" && (
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="space-y-3">
                     <SkeletonBlock className="h-5 w-36" />
@@ -96,7 +98,57 @@ export function DashboardShellLoading({
                 </div>
               )}
 
-              {variant === "solicitacoes" ? (
+              {variant === "traders" ? (
+                <div className="theme-card overflow-hidden rounded-[24px]">
+                  {/* Header: search + 3 buttons + counter */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-5">
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                      <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-center">
+                        {/* Search */}
+                        <SkeletonBlock className="h-12 w-full lg:max-w-md" />
+                        {/* Filtros + Exportar + Criar */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <SkeletonBlock className="h-10 w-24" />
+                          <SkeletonBlock className="h-10 w-28" />
+                          <SkeletonBlock className="h-10 w-36" />
+                        </div>
+                      </div>
+                      {/* Counter */}
+                      <div className="flex flex-col items-start gap-2 xl:items-end">
+                        <SkeletonBlock className="h-4 w-44" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Table header (4 cols) */}
+                  <div className="border-b border-[var(--app-border-soft)] px-6 py-3">
+                    <div className="grid grid-cols-4 gap-4">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <SkeletonBlock key={i} className="h-3 w-24" />
+                      ))}
+                    </div>
+                  </div>
+                  {/* 8 rows */}
+                  <div className="divide-y divide-[var(--app-border-soft)]">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="grid grid-cols-4 items-center gap-4 px-6 py-4">
+                        <div className="space-y-1.5">
+                          <SkeletonBlock className="h-4 w-36" />
+                          <SkeletonBlock className="h-3 w-20" />
+                        </div>
+                        <SkeletonBlock className="h-4 w-52" />
+                        <SkeletonBlock className="h-4 w-32" />
+                        <SkeletonBlock className="h-4 w-32" />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Pagination (Anterior / "Página X de Y" / Próximo) */}
+                  <div className="flex items-center justify-center gap-3 border-t border-[var(--app-border-soft)] px-6 py-4">
+                    <SkeletonBlock className="h-10 w-28 rounded-[12px]" />
+                    <SkeletonBlock className="h-4 w-32" />
+                    <SkeletonBlock className="h-10 w-28 rounded-[12px]" />
+                  </div>
+                </div>
+              ) : variant === "solicitacoes" ? (
                 <div className="theme-card overflow-hidden rounded-[24px]">
                   {/* Tabs */}
                   <div className="flex gap-2 border-b border-[var(--app-border-soft)] px-4 py-3">
