@@ -159,11 +159,18 @@ const getCachedPropTradersMap = unstable_cache(
 // Main cached query
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * approvalFilter:
+ *  - "PENDENTE": só enrollments com approvalStatus PENDENTE (ou sem enrollment no DB)
+ *  - "DECIDED": só enrollments com approvalStatus APROVADO ou REPROVADO
+ *  - undefined: sem filtro (mostra tudo)
+ */
 const getCachedActivePlans = unstable_cache(
   async (
     pageParam?: number | string | null,
     limitParam?: number | string | null,
     queryParam?: string | null,
+    approvalFilter?: "PENDENTE" | "DECIDED" | null,
   ): Promise<ActivePlansOverview> => {
     const params = { page: pageParam, limit: limitParam, q: queryParam };
     const requestedLimit = toPositiveInteger(params?.limit) ?? DEFAULT_PAGINATION_LIMIT;
@@ -171,40 +178,58 @@ const getCachedActivePlans = unstable_cache(
     const requestedPage = toPositiveInteger(params?.page) ?? 1;
     const searchQuery = params?.q?.trim().toLowerCase();
 
-    // Fonte primária: Nelogica (TODOS os traders ativos na mesa proprietária).
-    const propTradersMap = await getCachedPropTradersMap();
+    // Carrega traders Nelogica E enrollments ativos do DB em paralelo (1 chamada cada).
+    const [propTradersMap, allEnrollments] = await Promise.all([
+      getCachedPropTradersMap(),
+      prisma.student.findMany({
+        where: { nelogicaDocument: { not: null } },
+        include: { enrollments: { where: { status: "ACTIVE" }, include: { product: true }, take: 1 } },
+      }),
+    ]);
     const allTraders = Array.from(propTradersMap.values());
 
+    // Mapa CPF normalizado → student+enrollment, pra fazer o join in-memory
+    type StudentWithEnrollments = (typeof allEnrollments)[number];
+    const studentsByDoc = new Map<string, StudentWithEnrollments>();
+    for (const s of allEnrollments) {
+      if (s.nelogicaDocument) studentsByDoc.set(s.nelogicaDocument.replace(/\D/g, ""), s);
+    }
+
     // Filtro por busca (nome do trader, document, conta, plano)
-    const filtered = searchQuery
+    let filtered = searchQuery
       ? allTraders.filter((t) =>
           [t.subAccountHolder, t.document, t.subAccount, t.account, t.subscriptionPlanName, t.product]
             .some((field) => field?.toLowerCase().includes(searchQuery)),
         )
       : allTraders;
 
-    // Ordena por createdAt desc (mais recentes primeiro)
-    filtered.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    // Filtro por status de aprovação (usa o enrollment do DB)
+    if (approvalFilter) {
+      filtered = filtered.filter((t) => {
+        const student = studentsByDoc.get(t.document.replace(/\D/g, ""));
+        const status = student?.enrollments?.[0]?.approvalStatus ?? "PENDENTE";
+        if (approvalFilter === "PENDENTE") return status === "PENDENTE";
+        if (approvalFilter === "DECIDED") return status === "APROVADO" || status === "REPROVADO";
+        return true;
+      });
+    }
+
+    // Ordena: finalizados por approvalDecidedAt desc; ativos por createdAt desc
+    if (approvalFilter === "DECIDED") {
+      filtered.sort((a, b) => {
+        const sa = studentsByDoc.get(a.document.replace(/\D/g, ""))?.enrollments?.[0]?.approvalDecidedAt;
+        const sb = studentsByDoc.get(b.document.replace(/\D/g, ""))?.enrollments?.[0]?.approvalDecidedAt;
+        return (sb ? sb.getTime() : 0) - (sa ? sa.getTime() : 0);
+      });
+    } else {
+      filtered.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    }
 
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const page = Math.min(requestedPage, totalPages);
     const skip = (page - 1) * limit;
     const pageSlice = filtered.slice(skip, skip + limit);
-
-    // Enriquece com dados do banco (Student/Enrollment) se existir match por documento
-    const docs = pageSlice.map((t) => t.document.replace(/\D/g, "")).filter(Boolean);
-    const studentsArray = docs.length > 0
-      ? await prisma.student.findMany({
-          where: { nelogicaDocument: { in: docs } },
-          include: { enrollments: { where: { status: "ACTIVE" }, include: { product: true }, take: 1 } },
-        })
-      : [];
-    type StudentWithEnrollments = (typeof studentsArray)[number];
-    const studentsByDoc = new Map<string, StudentWithEnrollments>();
-    for (const s of studentsArray) {
-      if (s.nelogicaDocument) studentsByDoc.set(s.nelogicaDocument.replace(/\D/g, ""), s);
-    }
 
     const plans: ActivePlanListItem[] = pageSlice.map((propSub) => {
       const normalizedDoc = propSub.document.replace(/\D/g, "");
@@ -264,7 +289,8 @@ export const plansService = {
     page?: number | string | null;
     limit?: number | string | null;
     q?: string | null;
+    approvalFilter?: "PENDENTE" | "DECIDED" | null;
   }): Promise<ActivePlansOverview> {
-    return getCachedActivePlans(params?.page, params?.limit, params?.q);
+    return getCachedActivePlans(params?.page, params?.limit, params?.q, params?.approvalFilter);
   },
 };

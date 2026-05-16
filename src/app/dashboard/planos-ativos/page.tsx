@@ -16,6 +16,7 @@ export default async function PlanosAtivosPage({ searchParams }: PlanosAtivosPag
     page: resolvedSearchParams.page,
     q: resolvedSearchParams.q,
     limit: 6,
+    approvalFilter: "PENDENTE",
   });
 
   return <ActivePlansOverviewView data={data} />;

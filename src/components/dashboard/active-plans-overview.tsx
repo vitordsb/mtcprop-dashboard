@@ -19,6 +19,10 @@ import type { ActivePlansOverview } from "@/lib/services/plans-service";
 
 type ActivePlansOverviewProps = {
   data: ActivePlansOverview;
+  /** Título da página no shell. Default: "Planos Ativos" */
+  pageTitle?: string;
+  /** Base path para links/paginação. Default: "/dashboard/planos-ativos" */
+  basePath?: string;
 };
 
 function formatDocument(doc: string) {
@@ -32,16 +36,20 @@ function formatDocument(doc: string) {
   return doc;
 }
 
-export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
+export function ActivePlansOverviewView({
+  data,
+  pageTitle = "Planos Ativos",
+  basePath = "/dashboard/planos-ativos",
+}: ActivePlansOverviewProps) {
   return (
-    <DashboardShell company={data.company} pageTitle="Planos Ativos">
+    <DashboardShell company={data.company} pageTitle={pageTitle}>
       <section className="theme-card overflow-hidden rounded-[24px]">
         {/* SEARCH + FILTERS */}
         <div className="border-b border-[var(--app-border-soft)] px-6 py-4">
           <div className="flex w-full flex-col gap-3 lg:max-w-xl lg:flex-row lg:items-center">
             <SearchBar placeholder="Buscar por nome, CPF, conta ou plano..." />
             <Link
-              href="/dashboard/planos-ativos"
+              href={basePath}
               prefetch
               className="inline-flex items-center justify-center rounded-[12px] border border-[var(--app-border-strong)] bg-[var(--app-surface)] px-4 py-2 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-hover)]"
             >
@@ -217,7 +225,7 @@ export function ActivePlansOverviewView({ data }: ActivePlansOverviewProps) {
           totalPages={data.pagination.totalPages}
           total={data.pagination.total}
           itemsOnPage={data.plans.length}
-          basePath="/dashboard/planos-ativos"
+          basePath={basePath}
           extraParams={{ q: data.pagination.q }}
         />
       </section>

@@ -50,6 +50,7 @@ export async function getActivePlansOverview(params?: {
   page?: number | string | null;
   limit?: number | string | null;
   q?: string | null;
+  approvalFilter?: "PENDENTE" | "DECIDED" | null;
 }) {
   await requireCurrentAdminUser();
   const { plansService } = await import("@/lib/services/plans-service");

@@ -3,6 +3,7 @@
 import {
   Banknote,
   BarChart3,
+  CheckSquare,
   ClipboardList,
   KeyRound,
   LayoutDashboard,
@@ -29,6 +30,11 @@ const navItems = [
     icon: Layers,
     label: "Planos ativos",
     href: "/dashboard/planos-ativos",
+  },
+  {
+    icon: CheckSquare,
+    label: "Planos finalizados",
+    href: "/dashboard/planos-finalizados",
   },
   {
     icon: UsersRound,
