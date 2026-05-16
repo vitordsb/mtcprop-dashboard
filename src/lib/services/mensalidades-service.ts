@@ -9,12 +9,6 @@ import { nelogicaService } from "@/lib/services/nelogica-service";
 import type { PropTradingSubscription } from "@/lib/services/nelogica-types";
 import { unstable_cache } from "next/cache";
 
-const MASTERS_COM_MENSALIDADE = [
-  "MTC Prop Remunerado",
-  "MTC Prop - Remunerado",
-  "MTC Prop Mesa Real",
-];
-
 const CICLO_DIAS = 30;
 const GRACA_DIAS = 5;
 
@@ -126,10 +120,19 @@ const getCachedMensalidades = unstable_cache(
     const tradersMap = await getCachedTradersMap();
     const all = Array.from(tradersMap.values());
 
-    // Filtra só pelas masters com mensalidade
-    const filtered = all.filter((t) =>
-      MASTERS_COM_MENSALIDADE.some((m) => t.accountHolder?.toLowerCase().includes(m.toLowerCase())),
-    );
+    // Filtra só pelas masters com mensalidade.
+    // Regra extra: Mesa Real só conta se a plataforma for Profit Pro (Profit One na Mesa Real
+    // é cortesia/promocional e não tem cobrança mensal).
+    const filtered = all.filter((t) => {
+      const holder = (t.accountHolder ?? "").toLowerCase();
+      const isRemunerado = holder.includes("remunerado");
+      const isMesaReal = holder.includes("mesa real");
+      const product = (t.product ?? "").toLowerCase();
+
+      if (isRemunerado) return true;
+      if (isMesaReal) return product.includes("profit pro");
+      return false;
+    });
 
     // Busca
     const searched = searchQuery
